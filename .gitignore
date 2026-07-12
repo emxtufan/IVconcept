@@ -10,3 +10,4 @@ coverage/
 *.db-journal
 public/uploads/*
 !public/uploads/.gitkeep
+v1.zip
