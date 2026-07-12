@@ -49,6 +49,10 @@ function stripLeadingSlashes(value: string) {
   return value.replace(/^\/+/g, '');
 }
 
+function stripSearchAndHash(value: string) {
+  return value.split(/[?#]/, 1)[0] ?? value;
+}
+
 export function joinObjectKey(...segments: string[]) {
   return segments
     .flatMap((segment) => segment.split('/'))
@@ -103,6 +107,26 @@ export function buildPublicAssetUrl(objectKey: string) {
   }
 
   return `/${normalizedKey}`;
+}
+
+export function extractManagedObjectKeyFromUrl(assetUrl: string) {
+  const normalizedUrl = stripSearchAndHash(assetUrl.trim());
+
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  if (normalizedUrl.startsWith('/')) {
+    const objectKey = stripLeadingSlashes(normalizedUrl);
+    return objectKey.startsWith('uploads/') ? objectKey : null;
+  }
+
+  if (R2_PUBLIC_BASE_URL && normalizedUrl.startsWith(`${R2_PUBLIC_BASE_URL}/`)) {
+    const objectKey = stripLeadingSlashes(normalizedUrl.slice(R2_PUBLIC_BASE_URL.length));
+    return objectKey.startsWith('uploads/') ? objectKey : null;
+  }
+
+  return null;
 }
 
 export function getR2ConfigurationErrorMessage() {

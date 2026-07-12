@@ -443,7 +443,7 @@ export async function deleteGalleryItem(id: number) {
 }
 
 export async function findNewsletterSubscriberByEmail(email: string) {
-  const client = getPublicClient();
+  const client = getAdminClient();
   const { data, error } = await client
     .from('newsletter_subscribers')
     .select('id,email,source,created_at')
@@ -461,7 +461,7 @@ export async function findNewsletterSubscriberByEmail(email: string) {
 }
 
 export async function createNewsletterSubscriber(email: string, source: string) {
-  const client = getPublicClient();
+  const client = getAdminClient();
   const { data, error } = await client
     .from('newsletter_subscribers')
     .insert({
@@ -537,7 +537,7 @@ export async function createInquiry(values: {
   projectDetails: string;
   status: string;
 }) {
-  const client = getPublicClient();
+  const client = getAdminClient();
   const { data, error } = await client
     .from('inquiries')
     .insert({

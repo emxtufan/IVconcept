@@ -16,6 +16,7 @@ import {
   copyR2Object,
   createR2SignedUploadUrl,
   deleteR2Object,
+  extractManagedObjectKeyFromUrl,
   getR2ConfigurationErrorMessage,
   isR2Configured,
   joinObjectKey,
@@ -290,6 +291,33 @@ function isSiteContentPayload(value: unknown): value is SiteContent {
   ];
 
   return requiredKeys.every((key) => key in value);
+}
+
+function collectManagedSiteContentObjectKeys(value: unknown, objectKeys = new Set<string>()) {
+  if (typeof value === 'string') {
+    const objectKey = extractManagedObjectKeyFromUrl(value);
+
+    if (objectKey && !objectKey.startsWith('uploads/galleries/')) {
+      objectKeys.add(objectKey);
+    }
+
+    return objectKeys;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => {
+      collectManagedSiteContentObjectKeys(item, objectKeys);
+    });
+    return objectKeys;
+  }
+
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach((item) => {
+      collectManagedSiteContentObjectKeys(item, objectKeys);
+    });
+  }
+
+  return objectKeys;
 }
 
 function isRasterImage(mimeType: string) {
@@ -671,7 +699,39 @@ app.put('/api/site-content', requireAdminSession, async (request, response, next
     }
 
     const normalizedPayload = normalizeSiteContent(payload);
+    const currentRecord = await getMainSiteContent();
+    const previousObjectKeys = currentRecord
+      ? collectManagedSiteContentObjectKeys(currentRecord.content)
+      : new Set<string>();
+    const nextObjectKeys = collectManagedSiteContentObjectKeys(normalizedPayload);
     const record = await saveMainSiteContent(normalizedPayload);
+
+    if (isR2Configured()) {
+      const removedObjectKeys = [...previousObjectKeys].filter((objectKey) => !nextObjectKeys.has(objectKey));
+
+      if (removedObjectKeys.length > 0) {
+        const deleteResults = await Promise.allSettled(
+          removedObjectKeys.map((objectKey) => deleteR2Object(objectKey)),
+        );
+
+        const failedDeletes = deleteResults
+          .map((result, index) => ({ result, objectKey: removedObjectKeys[index] }))
+          .filter((entry): entry is {
+            result: PromiseRejectedResult;
+            objectKey: string;
+          } => entry.result.status === 'rejected');
+
+        if (failedDeletes.length > 0) {
+          console.error(
+            'Failed to delete orphaned R2 assets after site-content update:',
+            failedDeletes.map((entry) => ({
+              objectKey: entry.objectKey,
+              reason: entry.result.reason,
+            })),
+          );
+        }
+      }
+    }
 
     response.json(normalizeSiteContent(record.content as SiteContent));
   } catch (error) {
@@ -1103,7 +1163,7 @@ app.delete('/api/galleries/items/:id', requireAdminSession, async (request, resp
 
 app.post('/api/newsletter-subscriptions', async (request, response, next) => {
   try {
-    if (!ensureSupabaseConfigured(response)) {
+    if (!ensureSupabaseAdminConfigured(response)) {
       return;
     }
 
@@ -1198,7 +1258,7 @@ app.get('/api/inquiries', requireAdminSession, async (_request, response, next) 
 // POST /api/inquiries - Submit a new inquiry
 app.post('/api/inquiries', async (request, response, next) => {
   try {
-    if (!ensureSupabaseConfigured(response)) {
+    if (!ensureSupabaseAdminConfigured(response)) {
       return;
     }
 
