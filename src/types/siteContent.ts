@@ -246,6 +246,56 @@ export function normalizeTextSectionContent(content: TextSectionContent): TextSe
   };
 }
 
+function normalizeReviewItem(item: ReviewItem): ReviewItem {
+  const mediaType = item.mediaType === 'video' ? 'video' : 'image';
+  const thumbnail = item.thumbnail ?? '';
+  const mediaUrl = item.mediaUrl ?? '';
+  const poster = item.poster ?? '';
+
+  const normalizedThumbnail =
+    mediaType === 'video'
+      ? thumbnail || poster
+      : thumbnail || mediaUrl;
+
+  const normalizedMediaUrl =
+    mediaType === 'video'
+      ? mediaUrl
+      : mediaUrl || thumbnail;
+
+  const normalizedPoster =
+    mediaType === 'video'
+      ? poster || thumbnail
+      : poster;
+
+  return {
+    id: item.id ?? '',
+    title: item.title ?? '',
+    category: item.category ?? '',
+    description: item.description ?? '',
+    thumbnail: normalizedThumbnail,
+    mediaType,
+    mediaUrl: normalizedMediaUrl,
+    poster: normalizedPoster || undefined,
+  };
+}
+
+export function normalizeReviewsSectionContent(content: ReviewsSectionContent): ReviewsSectionContent {
+  return {
+    eyebrow: content.eyebrow ?? '',
+    titleLine1: content.titleLine1 ?? '',
+    titleLine2: content.titleLine2 ?? '',
+    description: content.description ?? '',
+    hints: {
+      mobileOpen: content.hints?.mobileOpen ?? '',
+      mobileDrag: content.hints?.mobileDrag ?? '',
+      desktopOpen: content.hints?.desktopOpen ?? '',
+      desktopDrag: content.hints?.desktopDrag ?? '',
+      scroll: content.hints?.scroll ?? '',
+    },
+    items: (content.items ?? []).map((item) => normalizeReviewItem(item)),
+  };
+}
+
 export function normalizeSlidersSectionContent(content: SlidersSectionContent): SlidersSectionContent {
   return {
     panels: (content.panels ?? []).map((panel) => ({
@@ -264,5 +314,6 @@ export function normalizeSiteContent(content: SiteContent): SiteContent {
     logoSection: normalizeLogoSectionContent(content.logoSection, content.textSection),
     slidersSection: normalizeSlidersSectionContent(content.slidersSection),
     textSection: normalizeTextSectionContent(content.textSection),
+    reviews: normalizeReviewsSectionContent(content.reviews),
   };
 }

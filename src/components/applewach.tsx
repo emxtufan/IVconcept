@@ -97,6 +97,22 @@ interface HoneycombItemProps {
   onSelect: (item: SelectedItem) => void;
 }
 
+function resolveReviewPreviewImage(project: WatchProject) {
+  const thumbnail = project.thumbnail?.trim() ?? '';
+  const poster = project.poster?.trim() ?? '';
+  const mediaUrl = project.mediaUrl?.trim() ?? '';
+
+  if (thumbnail) {
+    return thumbnail;
+  }
+
+  if (project.mediaType === 'video') {
+    return poster;
+  }
+
+  return mediaUrl || poster;
+}
+
 function HoneycombItem({
   project,
   baseX,
@@ -111,6 +127,9 @@ function HoneycombItem({
   prefersReducedMotion,
   onSelect,
 }: HoneycombItemProps) {
+  const previewImage = resolveReviewPreviewImage(project);
+  const isVideo = project.mediaType === 'video';
+
   // Infinite tiling: the item's on-screen offset from the viewport center is
   // its base lattice position plus the drag offset, wrapped into the tiling
   // region. The wrap jump happens in the hidden margin outside the viewport.
@@ -164,15 +183,22 @@ function HoneycombItem({
         className="relative block h-full w-full overflow-hidden rounded-full border border-zinc-800 bg-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a880]"
         aria-label={`Open story: ${project.title}`}
       >
-        <img
-          src={project.thumbnail}
-          alt=""
-          draggable={false}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          className="pointer-events-none h-full w-full select-none object-cover"
-        />
-        {project.mediaType === 'video' && (
+        {previewImage ? (
+          <img
+            src={previewImage}
+            alt=""
+            draggable={false}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="pointer-events-none h-full w-full select-none object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.09),transparent_48%),linear-gradient(180deg,rgba(28,28,28,0.92),rgba(10,10,10,1))]"
+          />
+        )}
+        {isVideo && (
           <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
             <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur-sm">
               <Play size={14} className="fill-current" />
@@ -698,14 +724,14 @@ export default function AppleWatchGridSection() {
                           playsInline
                           preload="auto"
                           disablePictureInPicture
-                          poster={selected.project.poster ?? selected.project.thumbnail}
+                          poster={selected.project.poster?.trim() || selected.project.thumbnail?.trim() || undefined}
                           className="h-full w-full object-cover"
                         >
                           <source src={selected.project.mediaUrl} type="video/mp4" />
                         </video>
                       ) : (
                         <img
-                          src={selected.project.mediaUrl}
+                          src={selected.project.mediaUrl?.trim() || selected.project.thumbnail?.trim()}
                           alt={selected.project.title}
                           draggable={false}
                           referrerPolicy="no-referrer"
