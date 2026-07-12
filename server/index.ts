@@ -2,6 +2,7 @@ import express from 'express';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdirSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import multer from 'multer';
@@ -57,13 +58,11 @@ const __dirname = path.dirname(__filename);
 const distPath = path.resolve(__dirname, '../dist');
 const publicPath = path.resolve(__dirname, '../public');
 const uploadsPath = path.resolve(publicPath, 'uploads');
-const tempUploadsPath = path.resolve(__dirname, '../.tmp/uploads');
+const tempUploadsPath = path.resolve(tmpdir(), 'ivconcept-uploads');
 const ADMIN_COOKIE_NAME = 'iv_admin_session';
 const ADMIN_SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim() ?? '';
 const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET?.trim() || ADMIN_PASSWORD;
-
-mkdirSync(uploadsPath, { recursive: true });
 mkdirSync(tempUploadsPath, { recursive: true });
 
 app.use(express.json({ limit: '2mb' }));
