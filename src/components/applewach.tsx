@@ -484,7 +484,7 @@ export default function AppleWatchGridSection() {
         {/* Section Title & Heading */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 md:mb-16">
           <div className="flex-1">
-            <span className="text-[10px] md:text-xs text-[#c5a880] tracking-[0.25em] font-sans font-bold uppercase block mb-3">
+            <span className="text-[10px] md:text-xs text-[#7a5c32] tracking-[0.25em] font-sans font-bold uppercase block mb-3">
               {reviewsContent.eyebrow}
             </span>
             <div
@@ -508,7 +508,7 @@ export default function AppleWatchGridSection() {
               />
             </div>
           </div>
-          <p className="text-xs md:text-sm text-zinc-500 font-medium tracking-wide max-w-xs md:text-right">
+          <p className="text-xs md:text-sm text-zinc-600 font-medium tracking-wide max-w-xs md:text-right">
             {reviewsContent.description}
           </p>
         </div>

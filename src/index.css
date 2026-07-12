@@ -1,9 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap');
+/* Self-hosted variable fonts (no render-blocking third-party request chain) */
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/space-grotesk";
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk Variable", "Space Grotesk", sans-serif;
 }
 
 body {

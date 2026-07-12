@@ -151,12 +151,12 @@ export default function Footer() {
                 <div className="text-[11px] font-semibold uppercase tracking-[-0.01em] text-[#c9a277]">
                   {footerContent.studioLabel}
                 </div>
-                <nav className="mt-11 flex flex-col gap-[3px] text-[15px] leading-[1.3] text-white/84">
+                <nav className="mt-11 flex flex-col text-[15px] leading-[1.3] text-white/84">
                   {studioLinks.map((link) => (
                     <a
                       key={link}
                       href={resolveSectionHref(link)}
-                      className="w-fit transition hover:text-[#c9a277]"
+                      className="w-fit py-1 transition hover:text-[#c9a277]"
                     >
                       {link}
                     </a>
@@ -168,9 +168,9 @@ export default function Footer() {
                 <div className="text-[11px] font-semibold uppercase tracking-[-0.01em] text-[#c9a277]">
                   {footerContent.projectsLabel}
                 </div>
-                <nav className="mt-11 flex flex-col gap-[3px] text-[15px] leading-[1.3] text-white/84">
+                <nav className="mt-11 flex flex-col text-[15px] leading-[1.3] text-white/84">
                   {projectLinks.map((link) => (
-                    <a key={link} href="#proiecte" className="w-fit transition hover:text-[#c9a277]">
+                    <a key={link} href="#proiecte" className="w-fit py-1 transition hover:text-[#c9a277]">
                       {link}
                     </a>
                   ))}
@@ -217,7 +217,7 @@ export default function Footer() {
                       {newsletterMessage}
                     </p>
                   ) : null}
-                  <p className="mt-6 max-w-[300px] text-[12px] leading-[1.52] text-white/38">
+                  <p className="mt-6 max-w-[300px] text-[12px] leading-[1.52] text-white/70">
                     {footerContent.newsletterDescription}
                   </p>
                 </form>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import Lenis from 'lenis';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Header from './components/Header';
@@ -11,7 +11,7 @@ import ScrollReveal from './components/ScrollReveal';
 import ServicesScrollSection from './components/ServicesScrollSection';
 import IntroLogoSection from './components/IntroLogoSection';
 import GallerySection from './components/gallery';
-import GalleryWallPage from './components/GalleryWallPage';
+const GalleryWallPage = lazy(() => import('./components/GalleryWallPage'));
 import SelectedWorkSection from './components/SelectedWorkSection';
 import CommitmentSection from './components/CommitmentSection';
 import ProjectParallaxPanels from './components/ProjectParallaxPanels';
@@ -134,7 +134,11 @@ export default function App() {
   });
 
   if (isGalleryWallRoute) {
-    return <GalleryWallPage />;
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#e8e0d6]" />}>
+        <GalleryWallPage />
+      </Suspense>
+    );
   }
 
   return (
@@ -258,7 +262,7 @@ export default function App() {
             <span className="text-[10px] md:text-xs text-zinc-400 tracking-[0.25em] font-sans font-bold uppercase">
               {about.eyebrow}
             </span>
-            <span className="text-xs md:text-sm text-zinc-500 font-medium tracking-wide">
+            <span className="text-xs md:text-sm text-zinc-400 font-medium tracking-wide">
               {about.secondaryText}
             </span>
           </div>
@@ -280,7 +284,7 @@ export default function App() {
 
             <div className="md:col-span-8 text-xl md:text-3xl font-light text-zinc-300 leading-relaxed tracking-wide font-sans">
               <ScrollReveal
-                baseOpacity={0.1}
+                baseOpacity={0}
                 enableBlur
                 baseRotation={3}
                 blurStrength={4}
@@ -290,7 +294,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex justify-between items-center text-[10px] text-zinc-600 font-mono tracking-widest uppercase mt-12 md:mt-24 border-t border-zinc-900 pt-8">
+          <div className="flex justify-between items-center text-[10px] text-zinc-400 font-mono tracking-widest uppercase mt-12 md:mt-24 border-t border-zinc-900 pt-8">
             <span>{about.footerLeft}</span>
             <span>{about.footerRight}</span>
           </div>

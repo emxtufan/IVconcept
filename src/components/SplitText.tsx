@@ -94,6 +94,10 @@ const SplitText: React.FC<SplitTextProps> = ({
       };
       const splitInstance = new GSAPSplitText(el, {
         type: splitType,
+        // ARIA is handled manually below: aria-label is not permitted on <p>/<span>
+        // (axe: aria-prohibited-attr), so the animated element is aria-hidden and
+        // an sr-only copy of the text carries the accessible name instead.
+        aria: 'none',
         smartWrap: true,
         autoSplit: splitType === 'lines',
         linesClass: 'split-line',
@@ -165,9 +169,12 @@ const SplitText: React.FC<SplitTextProps> = ({
     const Tag = (tag || 'p') as React.ElementType;
 
     return (
-      <Tag ref={ref} style={style} className={classes}>
-        {text}
-      </Tag>
+      <>
+        <span className="sr-only">{text}</span>
+        <Tag ref={ref} style={style} className={classes} aria-hidden="true">
+          {text}
+        </Tag>
+      </>
     );
   };
 

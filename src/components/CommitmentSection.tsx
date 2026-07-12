@@ -33,15 +33,15 @@ export default function CommitmentSection() {
 
   const labelScale = useTransform(smoothProgress, [0.1, 0.48], [0.94, 1]);
   const labelY = useTransform(smoothProgress, [0.1, 0.48], [20, 0]);
-  const labelOpacity = useTransform(smoothProgress, [0.1, 0.42], [0.2, 0.85]);
+  const labelOpacity = useTransform(smoothProgress, [0.1, 0.42], [0, 1]);
 
   const headlineScale = useTransform(smoothProgress, [0.1, 0.48], [0.88, 1]);
   const headlineY = useTransform(smoothProgress, [0.1, 0.48], [35, 0]);
-  const headlineOpacity = useTransform(smoothProgress, [0.1, 0.46], [0.1, 1]);
+  const headlineOpacity = useTransform(smoothProgress, [0.1, 0.46], [0, 1]);
 
   const logoScale = useTransform(smoothProgress, [0.1, 0.48], [0.62, 1.06]);
   const logoY = useTransform(smoothProgress, [0.1, 0.48], [42, 0]);
-  const logoOpacity = useTransform(smoothProgress, [0.1, 0.44], [0.08, 1]);
+  const logoOpacity = useTransform(smoothProgress, [0.1, 0.44], [0, 1]);
 
   const dividerScaleWidth = useTransform(smoothProgress, [0.1, 0.48], [0.3, 1]);
   const dividerOpacity = useTransform(smoothProgress, [0.1, 0.45], [0, 1]);
@@ -79,7 +79,7 @@ export default function CommitmentSection() {
       <div className="mx-auto flex w-full max-w-[1140px] flex-col items-center justify-center py-12 text-center md:py-20">
         <motion.span
           style={{ scale: labelScale, y: labelY, opacity: labelOpacity }}
-          className="mb-8 block font-sans text-[10px] font-bold uppercase tracking-[0.4em] text-[#c5a880] sm:mb-12 md:text-xs"
+          className="mb-8 block font-sans text-[10px] font-bold uppercase tracking-[0.4em] text-[#7a5c32] sm:mb-12 md:text-xs"
         >
           {content.eyebrow}
         </motion.span>

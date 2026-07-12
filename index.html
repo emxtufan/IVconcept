@@ -24,6 +24,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
 
+    <!-- Kick off the site-content request in parallel with the JS bundle (it gates first render) -->
+    <link rel="preload" href="/api/site-content" as="fetch" crossorigin="anonymous" />
+
+    <!-- Warm up connections for media origins used above the fold -->
+    <link rel="preconnect" href="https://cdn.ivconcept.ro" crossorigin />
+    <link rel="preconnect" href="https://pub-fc67fb44a2b94df487dcca2fb4c0516e.r2.dev" crossorigin />
+    <link rel="preconnect" href="https://framerusercontent.com" crossorigin />
+
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="IV Concept" />

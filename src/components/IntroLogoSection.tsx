@@ -150,6 +150,8 @@ export default function IntroLogoSection({
               alt={logoAlt}
               className="h-auto max-h-[300px] w-full max-w-[430px] object-contain sm:max-w-[620px] md:max-w-[840px] lg:max-w-[1020px]"
               referrerPolicy="no-referrer"
+              fetchPriority="high"
+              loading="eager"
             />
           ) : (
             <div className="font-sans text-[72px] font-bold uppercase leading-none tracking-[-0.06em] text-[#2c2218] sm:text-[104px] md:text-[138px] lg:text-[172px]">

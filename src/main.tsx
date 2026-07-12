@@ -1,20 +1,28 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
-import AdminApp from './admin/AdminApp.tsx';
 import {loadSiteContent} from './data';
 import './index.css';
 
 async function bootstrap() {
   const isAdminRoute = window.location.pathname.startsWith('/admin');
 
-  if (!isAdminRoute) {
-    await loadSiteContent();
+  if (isAdminRoute) {
+    // Keep the admin panel out of the public bundle (it is dead weight for visitors).
+    const {default: AdminApp} = await import('./admin/AdminApp.tsx');
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <AdminApp />
+      </StrictMode>,
+    );
+    return;
   }
+
+  await loadSiteContent();
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      {isAdminRoute ? <AdminApp /> : <App />}
+      <App />
     </StrictMode>,
   );
 }

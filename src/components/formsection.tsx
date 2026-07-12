@@ -95,7 +95,7 @@ export default function FormSection() {
       errors[field] ? 'border-red-500/60 focus:border-red-600' : 'border-[#2c2218]/15 focus:border-[#8f6b3a]'
     }`;
 
-  const labelClass = 'block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2c2218]/55';
+  const labelClass = 'block text-[10px] font-semibold uppercase tracking-[0.16em] text-[#2c2218]/75';
 
   return (
     <section id="contact" className="relative z-40 border-t border-white/10 bg-[#e8e0d6] text-[#2c2218]">
@@ -103,7 +103,7 @@ export default function FormSection() {
         <div className="grid gap-10 lg:grid-cols-[1fr_minmax(0,560px)] lg:items-start lg:gap-14">
           {/* Left info column */}
           <div>
-            <span className="block text-[10px] md:text-xs text-[#c5a880] tracking-[0.25em] font-sans font-bold uppercase">
+            <span className="block text-[10px] md:text-xs text-[#7a5c32] tracking-[0.25em] font-sans font-bold uppercase">
               [ SOLICITĂ OFERTĂ ]
             </span>
             <h2 className="mt-4 font-display text-3xl font-light leading-tight tracking-tight text-[#2c2218] md:text-5xl">
@@ -121,7 +121,7 @@ export default function FormSection() {
                   textAlign="center"
                 />
             </h2>
-            <p className="mt-5 max-w-[400px] font-sans text-sm font-light leading-relaxed text-[#2c2218]/50">
+            <p className="mt-5 max-w-[400px] font-sans text-sm font-light leading-relaxed text-[#2c2218]/75">
               Completează formularul și revenim cu o propunere personalizată în cel mai scurt timp.
             </p>
           </div>

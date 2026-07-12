@@ -145,10 +145,10 @@ export default function ServicesScrollSection() {
   const cardInner = (service: (typeof SERVICE_CARDS)[number]) => (
     <div className="relative z-10 flex min-h-[22rem] md:min-h-[24rem] flex-col justify-between gap-8">
       <div className="flex items-center justify-between gap-4 border-b border-[#2c2218]/10 pb-4">
-        <span className="text-[10px] md:text-xs text-[#a07f4f] tracking-[0.3em] font-sans font-bold uppercase">
+        <span className="text-[10px] md:text-xs text-[#7a5c32] tracking-[0.3em] font-sans font-bold uppercase">
           Pasul {service.number}
         </span>
-        <span className="text-[10px] text-[#2c2218]/40 font-mono tracking-widest uppercase">
+        <span className="text-[10px] text-[#2c2218]/70 font-mono tracking-widest uppercase">
           IV Concept
         </span>
       </div>
@@ -169,7 +169,7 @@ export default function ServicesScrollSection() {
         </div>
 
         <div className="md:col-span-5">
-          <p className="text-sm md:text-base font-light text-[#2c2218]/60 tracking-wide leading-relaxed">
+          <p className="text-sm md:text-base font-light text-[#2c2218]/75 tracking-wide leading-relaxed">
             {service.description}
           </p>
         </div>
@@ -211,10 +211,10 @@ export default function ServicesScrollSection() {
         <div className={`absolute inset-0 ${CARD_FACE}`} style={BACK_FACE_STYLE}>
           <div className="relative z-10 flex min-h-[22rem] md:min-h-[24rem] flex-col justify-between gap-8">
             <div className="flex items-center justify-between gap-4 border-b border-[#2c2218]/10 pb-4">
-              <span className="text-[10px] md:text-xs text-[#a07f4f] tracking-[0.3em] font-sans font-bold uppercase">
+              <span className="text-[10px] md:text-xs text-[#7a5c32] tracking-[0.3em] font-sans font-bold uppercase">
                 Contact
               </span>
-              <span className="text-[10px] text-[#2c2218]/40 font-mono tracking-widest uppercase">
+              <span className="text-[10px] text-[#2c2218]/70 font-mono tracking-widest uppercase">
                 IV Concept
               </span>
             </div>
@@ -233,7 +233,7 @@ export default function ServicesScrollSection() {
               </div>
 
               <div className="md:col-span-5">
-                <p className="text-sm md:text-base font-light text-[#2c2218]/60 tracking-wide leading-relaxed">
+                <p className="text-sm md:text-base font-light text-[#2c2218]/75 tracking-wide leading-relaxed">
                   Hai sa transformam spatiul tau intr-un proiect memorabil.
                 </p>
               </div>
@@ -278,7 +278,7 @@ export default function ServicesScrollSection() {
             </h2>
           </div>
 
-          <p className="max-w-[420px] text-xs md:text-sm text-zinc-500 font-medium tracking-wide leading-relaxed">
+          <p className="max-w-[420px] text-xs md:text-sm text-zinc-600 font-medium tracking-wide leading-relaxed">
             Un proces clar, de la prima idee pana la forma finala. Fiecare etapa este atent construita pentru a transforma viziunea intr-un spatiu coerent, functional si personal.
           </p>
         </div>
