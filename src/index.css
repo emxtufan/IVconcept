@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+body {
+  background-color: #e8e0d6;
+  color: #2c2218;
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+@keyframes animateGrain {
+  0%, 100% { transform: translate(0, 0) }
+  10% { transform: translate(-5%, -10%) }
+  20% { transform: translate(-15%, -20%) }
+  30% { transform: translate(-5%, -10%) }
+  40% { transform: translate(-15%, -20%) }
+  50% { transform: translate(-5%, -10%) }
+  60% { transform: translate(-15%, -20%) }
+  70% { transform: translate(-5%, -10%) }
+  80% { transform: translate(-15%, -20%) }
+  90% { transform: translate(-5%, -10%) }
+  100% { transform: translate(-15%, -20%) }
+}
+
+.grain-bg {
+  position: relative;
+  overflow: clip;
+}
+
+.grain-overlay {
+  content: "";
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/7/76/1k_Dissolve_Noise_Texture.png");
+  background-size: 240px 240px;
+  height: 300%;
+  width: 300%;
+  position: fixed;
+  top: -100%;
+  left: -100%;
+  opacity: 0.13;
+  animation: animateGrain 8s steps(10) infinite;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.lg-site-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-sans);
+}
+
+.lg-site-caption span {
+  color: #d3b186;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.lg-site-caption p {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}

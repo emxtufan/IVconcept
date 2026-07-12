@@ -1,0 +1,6 @@
+{
+  "name": "Avéon Landing Page",
+  "description": "Recreation of the Avéon Spaces section with pixel-perfect accuracy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

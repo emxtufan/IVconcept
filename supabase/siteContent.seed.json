@@ -1,0 +1,589 @@
+{
+  "hero": {
+    "welcomeLabel": "[ WELCOME TO AV\u00c9ON ]",
+    "titleLine1": "SPACES THAT",
+    "titleLine2": "TELL A STORY",
+    "trustedLabel": "TRUSTED BY 200+ HOMEOWNERS",
+    "trustedAvatars": [
+      "https://framerusercontent.com/images/ARmQOa71EvidN3oYWq9jWzn9OE.jpg?width=76&height=76",
+      "https://framerusercontent.com/images/W7oQ4BScxWhGC5oVOzKGxVGAD4.jpg?width=76&height=76",
+      "https://framerusercontent.com/images/UqrSyX3j0KDY0YY2JZCQuc7Wzzg.jpg?width=76&height=76",
+      "https://framerusercontent.com/images/wFJgmAuVHn37SCJR5MDBtfbFdY.jpg?width=76&height=76",
+      "https://framerusercontent.com/images/K6cUNifhQFa6qEX3kqNwfqMkiY.jpg?width=128&height=128"
+    ],
+    "description": "Transform your space into an Av\u00e9on where luxury meets livability through timeless design excellence.",
+    "exploreServicesText": "EXPLORE SERVICES",
+    "services": [
+      "Residential Design",
+      "Commercial Interiors",
+      "Furniture Curation",
+      "Spatial Planning"
+    ],
+    "showReel": {
+      "label": "SHOW REEL",
+      "location": "BROOKLYN, NY",
+      "type": "Residential",
+      "videoUrl": "https://framerusercontent.com/assets/8SPe4Zfx6vnUhiy2gmvKXtuRpM.mp4"
+    }
+  },
+  "about": {
+    "eyebrow": "ABOUT IV CONCEPT",
+    "secondaryText": "Decorative Mirrors \u2022 Textured Walls \u2022 Roka Finishes",
+    "titleLine1": "About",
+    "titleLine2": "IV Concept",
+    "description": "At IV Concept, we transform simple interiors into refined visual experiences. We create decorative mirrors, textured walls and Roka-inspired surfaces designed to bring depth, elegance and personality into every space. Each project is built around detail, proportion and atmosphere \u2014 because a wall should not only cover a room, it should define it.",
+    "footerLeft": "\u00a9 2026 IV Concept",
+    "footerRight": "Architectural Atmosphere & Artistry"
+  },
+  "imageSection": {
+    "columns": [
+      {
+        "id": 1,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 01 // TEXTURED SURFACE ]",
+            "dimensions": "Plaster & Roka Finish",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 02 // TIMBER ACCENTS ]",
+            "dimensions": "Warm Walnut Lounge",
+            "aspectClass": "aspect-square",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 03 // TRAVERTINE PLINTH ]",
+            "dimensions": "Curated Object Placement",
+            "aspectClass": "aspect-[9/16]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 04 // BRUTALIST ARCH ]",
+            "dimensions": "Raw Plaster Intersection",
+            "aspectClass": "aspect-[4/3]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 05 // LUXURY MARBLE ]",
+            "dimensions": "Deep Vein Dark Stone",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 06 // TIMELESS SPACES ]",
+            "dimensions": "Minimalist Dining Concept",
+            "aspectClass": "aspect-[9/16]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 07 // REFLECTIVE PLANE ]",
+            "dimensions": "Atmospheric Shadow Play",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 08 // SOLEMN HALLWAY ]",
+            "dimensions": "Symmetric Light Channels",
+            "aspectClass": "aspect-square",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 09 // SCULPTED GEOMETRY ]",
+            "dimensions": "Roka-Inspired Columns",
+            "aspectClass": "aspect-[4/5]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 10 // ORGANIC LIVING ]",
+            "dimensions": "Curated Raw Materials",
+            "aspectClass": "aspect-[3/2]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1617806118233-18e1db207faf?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 11 // BRONZED GLASS ]",
+            "dimensions": "Polished Mirror Partition",
+            "aspectClass": "aspect-[9/16]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1615529182906-134856f8fc0a?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 12 // MINIMAL KITCHEN ]",
+            "dimensions": "Monolithic Stone Island",
+            "aspectClass": "aspect-[4/3]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 13 // OAK CABINETRY ]",
+            "dimensions": "Brushed Brass Detailing",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 14 // RECESSED COVE ]",
+            "dimensions": "Indirect Ambient Glow",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1540518614846-7eded433c457?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 15 // TACTILE TEXTILES ]",
+            "dimensions": "Boucl\u00e9 & Linen Accents",
+            "aspectClass": "aspect-square",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 16 // BEDROOM ARCH ]",
+            "dimensions": "Washed Linens & Shadows",
+            "aspectClass": "aspect-[4/5]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 17 // STONE BATHROOM ]",
+            "dimensions": "Honed Pietra Grey",
+            "aspectClass": "aspect-[3/2]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1618219944342-824e40a13285?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 18 // TERRACOTTA VASE ]",
+            "dimensions": "Raw Clay & Neutral Tones",
+            "aspectClass": "aspect-[9/16]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 19 // RUSTIC BENCH ]",
+            "dimensions": "Curated Wabi Sabi Entry",
+            "aspectClass": "aspect-[4/3]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600607687644-c7171b42498f?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 20 // SYMMETRIC SINKS ]",
+            "dimensions": "Dual Stone Washbasin",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1617103996706-09a585a49162?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 21 // WARM LUMINESCENCE ]",
+            "dimensions": "Soft Recessed Lighting",
+            "aspectClass": "aspect-[9/16]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 22 // LINEAR VISTA ]",
+            "dimensions": "Seamless Horizon Corridor",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1615876234886-fd9a39faa97f?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 23 // SCULPTURAL CHAIR ]",
+            "dimensions": "Curved Boucl\u00e9 Lounge",
+            "aspectClass": "aspect-square",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1600210491892-03d54c0aaf87?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 24 // TERRACE VIEW ]",
+            "dimensions": "Framed Panoramic Opening",
+            "aspectClass": "aspect-[3/2]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 25 // SLEEK WARDROBE ]",
+            "dimensions": "Smoked Oak Walk-In Closet",
+            "aspectClass": "aspect-[4/5]",
+            "heightClass": ""
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 26 // MONOCHROME SOFTNESS ]",
+            "dimensions": "Plaster Bedroom Concept",
+            "aspectClass": "aspect-[9/16]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 27 // CURATED FIREPLACE ]",
+            "dimensions": "Poured Concrete Mantelpiece",
+            "aspectClass": "aspect-[3/4]",
+            "heightClass": ""
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1600121848594-d8644e57abab?auto=format&fit=crop&w=1000&q=80",
+            "label": "[ 28 // ZEN BALCONY ]",
+            "dimensions": "Minimal Outdoor Lounge",
+            "aspectClass": "aspect-square",
+            "heightClass": ""
+          }
+        ]
+      }
+    ]
+  },
+  "logoSection": {
+    "logoUrl": "",
+    "logoAlt": "IV Concept logo"
+  },
+  "textSection": {
+    "eyebrow": "[ OUR COMMITMENT ]",
+    "titleLine1": "Crafting Timeless Interiors,",
+    "titleLine2": "Designed To Be Remembered.",
+    "descriptionLine1": "Transforming Walls Into Art &",
+    "descriptionLine2": "Spaces Into Lasting Memories.",
+    "useLogoInsteadOfText": false,
+    "logoUrl": "",
+    "logoAlt": "IV Concept logo"
+  },
+  "cardsSection": {
+    "eyebrow": "[ SELECTED WORK ]",
+    "titleLine1": "Projects That Speak",
+    "titleLine2": "for Themselves",
+    "linkText": "View Visual Journal",
+    "specLabels": {
+      "finish": "Wall Finish",
+      "mirror": "Mirror Detail",
+      "area": "Total Area",
+      "dimensions": "Dimensions",
+      "time": "Execution Time",
+      "status": "Status",
+      "statusValue": "Completed"
+    },
+    "projects": [
+      {
+        "id": "p1",
+        "title": "Textured Living Wall",
+        "location": "Bucharest, Romania",
+        "type": "Decorative textured wall",
+        "finish": "Roka mineral texture, matte stone effect",
+        "mirror": "Custom bronze decorative mirror",
+        "area": "18 m\u00b2",
+        "length": "6 m",
+        "width": "3 m",
+        "time": "5 days",
+        "description": "A refined textured wall created to add depth, warmth and architectural character to the living space.",
+        "image": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=80"
+      },
+      {
+        "id": "p2",
+        "title": "Elegant Mirror Hallway",
+        "location": "Constan\u021ba, Romania",
+        "type": "Decorative mirror composition",
+        "finish": "Smooth premium wall base",
+        "mirror": "Smoked bronze mirror, custom cut",
+        "area": "12 m\u00b2",
+        "length": "4 m",
+        "width": "3 m",
+        "time": "3 days",
+        "description": "A custom mirror installation designed to visually enlarge the hallway and add a luxury boutique atmosphere.",
+        "image": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1000&q=80"
+      },
+      {
+        "id": "p3",
+        "title": "Roka Feature Wall",
+        "location": "Bucharest, Romania",
+        "type": "Roka textured wall",
+        "finish": "Roka stone texture with soft matte finish",
+        "mirror": "Optional integrated decorative mirror",
+        "area": "22 m\u00b2",
+        "length": "7.3 m",
+        "width": "3 m",
+        "time": "6 days",
+        "description": "A premium feature wall with natural texture, subtle shadows and a high-end architectural look.",
+        "image": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1000&q=80"
+      },
+      {
+        "id": "p4",
+        "title": "Minimalist Travertine Entryway",
+        "location": "Cluj-Napoca, Romania",
+        "type": "Travertine textured surface",
+        "finish": "Travertine plaster with brushed limestone texture",
+        "mirror": "Backlit brass-trimmed vanity mirror",
+        "area": "15 m\u00b2",
+        "length": "5 m",
+        "width": "3 m",
+        "time": "4 days",
+        "description": "A bespoke textured entryway project blending raw mineral plaster with glowing indirect lighting and warm reflections.",
+        "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80"
+      }
+    ]
+  },
+  "slidersSection": {
+    "panels": [
+      {
+        "id": 1,
+        "indexLabel": "1/4",
+        "category": "Office Design",
+        "title": "Luxury Corporate Office",
+        "description": "A professional workspace designed to improve productivity and brand presence.",
+        "image": "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1400&q=80",
+        "desktopImage": "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1400&q=80",
+        "mobileImage": "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        "id": 2,
+        "indexLabel": "2/4",
+        "category": "Mirror Composition",
+        "title": "Bronze Reflection Hall",
+        "description": "Decorative mirrors layered to expand the hallway and create a calm boutique atmosphere.",
+        "image": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1400&q=80",
+        "desktopImage": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1400&q=80",
+        "mobileImage": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        "id": 3,
+        "indexLabel": "3/4",
+        "category": "Textured Wall",
+        "title": "Stone Surface Living Room",
+        "description": "A tactile feature wall shaped to bring warmth, shadow and architectural depth into the space.",
+        "image": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1400&q=80",
+        "desktopImage": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1400&q=80",
+        "mobileImage": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        "id": 4,
+        "indexLabel": "4/4",
+        "category": "Commercial Interior Design",
+        "title": "The Artisan Cafe",
+        "description": "The Artisan Cafe interior was designed to create a welcoming and memorable customer experience.",
+        "image": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1400&q=80",
+        "desktopImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1400&q=80",
+        "mobileImage": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=900&q=80"
+      }
+    ]
+  },
+  "videoCardSection": {
+    "eyebrow": "[ VIKTOR'S STORY ]",
+    "quote": "My portfolio is where Viktor shapes clean visuals and digital stories that feel personal, purposeful, and built to leave a lasting impact.",
+    "brandName": "VIKTOR DESIGN",
+    "brandRole": "DESIGN DIRECTION & FRONTEND",
+    "storyTitle": "My Story.",
+    "paragraphOne": "Built with intention, my portfolio grew from a simple belief: strong visuals start with clarity. I craft each detail to show how ideas move, feel, and connect online.",
+    "paragraphTwo": "Every project is personal - shaped by curiosity, craft, and a commitment to web work that feels timeless and built to last.",
+    "buttonText": "VIEW WORKS",
+    "videoUrl": "https://framerusercontent.com/assets/VqS0xQjmIM5zBg5W2i6Ic5OCcg.mp4"
+  },
+  "reviews": {
+    "eyebrow": "[ RECOMMENDATIONS GRID ]",
+    "titleLine1": "The Faces Behind",
+    "titleLine2": "The Recommendation",
+    "description": "Drag the grid to explore the faces. Tap any circle to open an image or a reel.",
+    "hints": {
+      "mobileOpen": "Tap a circle to open a story",
+      "mobileDrag": "Swipe sideways to explore",
+      "desktopOpen": "Click a circle to open a story",
+      "desktopDrag": "Drag sideways to explore",
+      "scroll": "Scroll down to continue"
+    },
+    "items": [
+      {
+        "id": "w1",
+        "title": "Textured Living Wall",
+        "category": "Roka Texture",
+        "description": "A refined textured wall created to add depth, warmth and architectural character to the living space.",
+        "thumbnail": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "video",
+        "mediaUrl": "https://framerusercontent.com/assets/VqS0xQjmIM5zBg5W2i6Ic5OCcg.mp4",
+        "poster": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        "id": "w2",
+        "title": "Elegant Mirror Hallway",
+        "category": "Decorative Mirrors",
+        "description": "A custom mirror installation designed to visually enlarge the hallway and add a luxury boutique atmosphere.",
+        "thumbnail": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "video",
+        "mediaUrl": "https://framerusercontent.com/assets/8SPe4Zfx6vnUhiy2gmvKXtuRpM.mp4",
+        "poster": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        "id": "w3",
+        "title": "Roka Feature Wall",
+        "category": "Roka Texture",
+        "description": "A premium feature wall with natural texture, subtle shadows and a high-end architectural look.",
+        "thumbnail": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w4",
+        "title": "Travertine Entryway",
+        "category": "Mineral Plaster",
+        "description": "Raw mineral plaster blended with glowing indirect lighting and warm reflections.",
+        "thumbnail": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w5",
+        "title": "Bronze Mirror Study",
+        "category": "Decorative Mirrors",
+        "description": "Smoked bronze mirror panels cut to measure, framing the room in soft amber reflections.",
+        "thumbnail": "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w6",
+        "title": "Stone Effect Lounge",
+        "category": "Textured Walls",
+        "description": "Matte stone-effect surfaces that give the lounge a calm, monolithic presence.",
+        "thumbnail": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w7",
+        "title": "Sculpted Bedroom Panel",
+        "category": "Textured Walls",
+        "description": "A sculpted headboard wall with soft relief patterns and warm accent lighting.",
+        "thumbnail": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w8",
+        "title": "Atrium Light Well",
+        "category": "Spatial Design",
+        "description": "A vertical composition of texture and glass that carries daylight deep into the home.",
+        "thumbnail": "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w9",
+        "title": "Kitchen Mineral Backdrop",
+        "category": "Mineral Plaster",
+        "description": "A seamless mineral backdrop that anchors the kitchen with quiet, tactile depth.",
+        "thumbnail": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80"
+      },
+      {
+        "id": "w10",
+        "title": "Gallery Corridor",
+        "category": "Spatial Design",
+        "description": "A corridor treated as a gallery \u2014 rhythm, shadow and one perfect mirror.",
+        "thumbnail": "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=800&q=80",
+        "mediaType": "image",
+        "mediaUrl": "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?auto=format&fit=crop&w=1200&q=80"
+      }
+    ]
+  },
+  "footer": {
+    "brandName": "Av\u00e9on",
+    "descriptor": "INTERIOR DESIGN STUDIO - EST. 2020",
+    "address": "123 Design District Brooklyn, NY",
+    "email": "hello@aveondesign.com",
+    "phone": "+1 (415) 555-0199",
+    "studioLabel": "[ STUDIO ]",
+    "studioLinks": [
+      "Home",
+      "About me",
+      "Galerie foto",
+      "Piesele",
+      "Pasii de colaborare",
+      "Proiecte pereti",
+      "Cursuri",
+      "Reactii",
+      "Contact"
+    ],
+    "projectsLabel": "[ PROJECTS ]",
+    "projectLinks": [
+      "Elm Grove Residence",
+      "Noma Kitchen & Bar",
+      "Whitehaven Coastal Retreat",
+      "Maison Noir Boutique Hotel",
+      "Park Lane Penthouse",
+      "Arch Studio Office"
+    ],
+    "newsletterLine1": "Get quarterly notes on new work,",
+    "newsletterLine2": "materials, and behind-the-scenes",
+    "newsletterLine3": "process",
+    "newsletterPlaceholder": "max@setframe.design",
+    "newsletterButtonText": "SUBSCRIBE NOW",
+    "newsletterDescription": "No spam. Just honest design thinking delivered to your inbox once a quarter.",
+    "socialLinks": [
+      "Instagram",
+      "Pinterest",
+      "X (Twitter)",
+      "LinkedIn",
+      "Behance"
+    ],
+    "imageUrl": "https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&w=2200&q=80",
+    "copyright": "\u00a9 2026 Aveon Design. All rights reserved.",
+    "craftedText": "Crafted with care in Brooklyn, NY.",
+    "privacyPolicyText": "Privacy Policy",
+    "termsText": "Terms & Conditions",
+    "wordmark": "Av\u00e9on Studio"
+  }
+}
