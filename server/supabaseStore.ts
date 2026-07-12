@@ -1,4 +1,4 @@
-import seedContent from '../supabase/siteContent.seed.json';
+import seedContent from '../supabase/siteContentSeed.js';
 import type { SiteContent } from '../src/types/siteContent.js';
 import { supabaseAdmin, supabasePublic } from './supabase.js';
 

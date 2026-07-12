@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import seedContent from '../supabase/siteContent.seed.json';
+import seedContent from '../supabase/siteContentSeed.js';
 import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent.js';
 import { hasSupabaseAdminAccess } from '../server/supabase.js';
 import { saveMainSiteContent } from '../server/supabaseStore.js';
