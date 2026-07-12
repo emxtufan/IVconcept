@@ -7,8 +7,8 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import multer from 'multer';
 import sharp from 'sharp';
-import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent';
-import { getGalleryFolderPath, slugifyGalleryName, type GalleryRecord } from '../src/types/galleries';
+import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent.js';
+import { getGalleryFolderPath, slugifyGalleryName, type GalleryRecord } from '../src/types/galleries.js';
 import {
   buildGalleryObjectKey,
   buildPublicAssetUrl,
@@ -22,7 +22,7 @@ import {
   proxyR2ObjectToResponse,
   uploadBufferToR2,
   uploadFileToR2,
-} from './r2Storage';
+} from './r2Storage.js';
 import {
   createGallery,
   createGalleryItems,
@@ -43,13 +43,13 @@ import {
   saveMainSiteContent,
   updateGallery,
   updateGalleryItemUrl,
-} from './supabaseStore';
+} from './supabaseStore.js';
 import {
   getSupabaseAdminErrorMessage,
   getSupabaseConfigurationErrorMessage,
   hasSupabaseAdminAccess,
   isSupabaseConfigured,
-} from './supabase';
+} from './supabase.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);

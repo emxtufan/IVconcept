@@ -1,6 +1,6 @@
 import seedContent from '../supabase/siteContent.seed.json';
-import type { SiteContent } from '../src/types/siteContent';
-import { supabaseAdmin, supabasePublic } from './supabase';
+import type { SiteContent } from '../src/types/siteContent.js';
+import { supabaseAdmin, supabasePublic } from './supabase.js';
 
 interface SiteContentRow {
   id: number;

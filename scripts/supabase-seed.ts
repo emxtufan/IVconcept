@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import seedContent from '../supabase/siteContent.seed.json';
-import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent';
-import { hasSupabaseAdminAccess } from '../server/supabase';
-import { saveMainSiteContent } from '../server/supabaseStore';
+import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent.js';
+import { hasSupabaseAdminAccess } from '../server/supabase.js';
+import { saveMainSiteContent } from '../server/supabaseStore.js';
 
 async function main() {
   if (!hasSupabaseAdminAccess()) {
