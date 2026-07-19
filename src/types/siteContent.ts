@@ -6,6 +6,7 @@ export interface HeroShowReelContent {
 }
 
 export interface HeroContent {
+  backgroundImage: string;
   welcomeLabel: string;
   titleLine1: string;
   titleLine2: string;
@@ -197,6 +198,7 @@ export const DEFAULT_TRUSTED_AVATARS = [
 
 export function normalizeHeroContent(content: HeroContent): HeroContent {
   return {
+    backgroundImage: content.backgroundImage ?? '',
     welcomeLabel: content.welcomeLabel ?? '',
     titleLine1: content.titleLine1 ?? '',
     titleLine2: content.titleLine2 ?? '',

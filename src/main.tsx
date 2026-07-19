@@ -6,6 +6,7 @@ import './index.css';
 
 async function bootstrap() {
   const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const isProductsRoute = window.location.pathname.startsWith('/produse');
 
   if (isAdminRoute) {
     // Keep the admin panel out of the public bundle (it is dead weight for visitors).
@@ -14,6 +15,14 @@ async function bootstrap() {
       <StrictMode>
         <AdminApp />
       </StrictMode>,
+    );
+    return;
+  }
+
+  if (isProductsRoute) {
+    const {default: ProductCatalogPage} = await import('./components/ProductCatalogPage.tsx');
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode><ProductCatalogPage /></StrictMode>,
     );
     return;
   }

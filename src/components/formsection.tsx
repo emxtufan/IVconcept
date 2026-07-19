@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import SplitText from "./SplitText";
+import { uploadFilesWithProgress } from '../admin/uploadClient';
 
 const initialForm = {
   name: '',
   email: '',
   phone: '',
   projectDetails: '',
+  gdprAccepted: false,
 };
 
 export default function FormSection() {
@@ -13,6 +15,8 @@ export default function FormSection() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -44,6 +48,9 @@ export default function FormSection() {
     if (!formData.projectDetails.trim()) {
       newErrors.projectDetails = 'Detaliile lucrării sunt obligatorii.';
     }
+    if (!formData.gdprAccepted) {
+      newErrors.gdprAccepted = 'Acordul GDPR este obligatoriu.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -66,9 +73,19 @@ export default function FormSection() {
       email: formData.email.trim(),
       phone: formData.phone.trim(),
       projectDetails: formData.projectDetails.trim(),
+      gdprAccepted: formData.gdprAccepted,
+      images: [] as string[],
     };
 
     try {
+      if (photos.length > 0) {
+        const uploaded = await uploadFilesWithProgress(
+          photos,
+          setUploadProgress,
+          '/api/inquiries/uploads',
+        );
+        payload.images = uploaded.files.map((file) => file.url);
+      }
       const response = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +101,8 @@ export default function FormSection() {
       setStatus('success');
       setMessage('Solicitarea a fost trimisă cu succes! Te vom contacta în curând.');
       setFormData(initialForm);
+      setPhotos([]);
+      setUploadProgress(0);
     } catch (err) {
       setStatus('error');
       setMessage(err instanceof Error ? err.message : 'Trimiterea a eșuat. Te rugăm să încerci din nou.');
@@ -214,6 +233,50 @@ export default function FormSection() {
                   <span className="block text-xs text-red-400">{errors.projectDetails}</span>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <label htmlFor="projectPhotos" className={labelClass}>
+                  Fotografii proiect (opțional, maximum 5)
+                </label>
+                <input
+                  id="projectPhotos"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  disabled={status === 'submitting'}
+                  onChange={(event) => {
+                    const selected = Array.from(event.target.files ?? []);
+                    if (selected.length > 5) {
+                      setErrors((previous) => ({ ...previous, photos: 'Poți încărca maximum 5 fotografii.' }));
+                      setPhotos(selected.slice(0, 5));
+                    } else {
+                      setErrors((previous) => ({ ...previous, photos: '' }));
+                      setPhotos(selected);
+                    }
+                  }}
+                  className="block w-full rounded-lg border border-[#2c2218]/15 bg-white/50 px-3.5 py-3 text-xs"
+                />
+                <p className="text-[11px] text-[#2c2218]/50">
+                  {photos.length}/5 imagini selectate.
+                  {status === 'submitting' && photos.length > 0 ? ` Upload ${uploadProgress}%` : ''}
+                </p>
+                {errors.photos && <span className="block text-xs text-red-500">{errors.photos}</span>}
+              </div>
+
+              <label className="flex items-start gap-3 text-xs leading-5 text-[#2c2218]/65">
+                <input
+                  type="checkbox"
+                  checked={formData.gdprAccepted}
+                  disabled={status === 'submitting'}
+                  onChange={(event) => {
+                    setFormData((previous) => ({ ...previous, gdprAccepted: event.target.checked }));
+                    setErrors((previous) => ({ ...previous, gdprAccepted: '' }));
+                  }}
+                  className="mt-1 h-4 w-4 accent-[#2c2218]"
+                />
+                <span>Sunt de acord cu prelucrarea datelor personale și a fotografiilor încărcate pentru soluționarea solicitării de ofertă.</span>
+              </label>
+              {errors.gdprAccepted && <span className="block text-xs text-red-500">{errors.gdprAccepted}</span>}
 
               {/* Success/Error message */}
               {message && (

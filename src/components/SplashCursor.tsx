@@ -18,6 +18,7 @@ interface SplashCursorProps {
   TRANSPARENT?: boolean;
   RAINBOW_MODE?: boolean;
   COLOR?: string;
+  BACKGROUND_IMAGE?: string;
   position?: 'fixed' | 'absolute';
   zIndex?: number;
   isActive?: boolean;
@@ -66,6 +67,7 @@ export default function SplashCursor({
   TRANSPARENT = true,
   RAINBOW_MODE = false,
   COLOR = '#A855F7',
+  BACKGROUND_IMAGE = '',
   position = 'fixed',
   zIndex = 30,
   isActive = true
@@ -645,7 +647,9 @@ export default function SplashCursor({
       }
       imageAspect = bgImage.width / bgImage.height;
     };
-    bgImage.src = 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2000';
+    if (BACKGROUND_IMAGE.trim()) {
+      bgImage.src = BACKGROUND_IMAGE;
+    }
 
     function isPowerOf2(value: number) {
       return (value & (value - 1)) === 0;
@@ -1116,7 +1120,7 @@ export default function SplashCursor({
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isDesktop]);
+  }, [isDesktop, BACKGROUND_IMAGE]);
 
   if (!isDesktop) return null;
 

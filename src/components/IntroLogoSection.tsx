@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 interface IntroLogoSectionProps {
+  backgroundImage?: string;
   logoUrl?: string;
   logoAlt?: string;
   brandName: string;
@@ -32,6 +33,7 @@ function getDockMetrics(source: HTMLElement, target: HTMLElement) {
 }
 
 export default function IntroLogoSection({
+  backgroundImage,
   logoUrl,
   logoAlt = 'Brand logo',
   brandName,
@@ -41,16 +43,18 @@ export default function IntroLogoSection({
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const introLogoRef = useRef<HTMLDivElement | null>(null);
+  const scrollHintRef = useRef<HTMLDivElement | null>(null);
   const showImageLogo = Boolean(logoUrl && logoUrl.trim().length > 0);
 
   useEffect(() => {
     const overlay = overlayRef.current;
     const backdrop = backdropRef.current;
     const introLogo = introLogoRef.current;
+    const scrollHint = scrollHintRef.current;
     const navbarLogoTarget = navbarLogoTargetRef.current;
     const hero = heroRef.current;
 
-    if (!overlay || !backdrop || !introLogo || !navbarLogoTarget || !hero) {
+    if (!overlay || !backdrop || !introLogo || !scrollHint || !navbarLogoTarget || !hero) {
       return;
     }
 
@@ -61,6 +65,7 @@ export default function IntroLogoSection({
           transformOrigin: '50% 50%',
         });
         gsap.set(backdrop, { clearProps: 'opacity' });
+        gsap.set(scrollHint, { clearProps: 'opacity,y' });
         gsap.set(navbarLogoTarget, { opacity: 0 });
       };
 
@@ -79,6 +84,16 @@ export default function IntroLogoSection({
           onRefreshInit: resetState,
         },
       });
+
+      timeline.to(
+        scrollHint,
+        {
+          opacity: 0,
+          y: 12,
+          duration: 0.18,
+        },
+        0,
+      );
 
       timeline.to(
         introLogo,
@@ -140,7 +155,13 @@ export default function IntroLogoSection({
       aria-hidden="true"
       className="intro-logo-overlay pointer-events-none absolute inset-0 z-[60]"
     >
-      <div ref={backdropRef} className="absolute inset-0 bg-[#e8e0d6]" />
+      <div
+        ref={backdropRef}
+        className="absolute inset-0 bg-[#e8e0d6] bg-cover bg-center bg-no-repeat"
+        style={backgroundImage ? {
+          backgroundImage: `linear-gradient(rgba(232, 224, 214, 0.38), rgba(232, 224, 214, 0.38)), url("${backgroundImage.replace(/"/g, '\\"')}")`,
+        } : undefined}
+      />
 
       <div className="absolute inset-0 flex items-center justify-center px-6">
         <div ref={introLogoRef} className="intro-logo flex items-center justify-center">
@@ -159,6 +180,18 @@ export default function IntroLogoSection({
             </div>
           )}
         </div>
+      </div>
+
+      <div
+        ref={scrollHintRef}
+        className="absolute inset-x-0 bottom-5 flex flex-col items-center gap-3 text-[#2c2218] sm:bottom-7 md:bottom-9"
+      >
+        <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.28em] sm:text-[11px]">
+          Scroll pentru a descoperi
+        </span>
+        <span className="relative block h-9 w-px overflow-hidden bg-[#2c2218]/25">
+          <span className="absolute left-0 top-0 h-4 w-px animate-bounce bg-[#2c2218]" />
+        </span>
       </div>
     </div>
   );

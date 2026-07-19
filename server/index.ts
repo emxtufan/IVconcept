@@ -9,6 +9,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent.js';
 import { getGalleryFolderPath, slugifyGalleryName, type GalleryRecord } from '../src/types/galleries.js';
+import { slugifyProductCategory } from '../src/types/products.js';
 import {
   buildGalleryObjectKey,
   buildPublicAssetUrl,
@@ -26,24 +27,35 @@ import {
 } from './r2Storage.js';
 import {
   createGallery,
+  createCourseSubscriber,
   createGalleryItems,
   createInquiry,
   createNewsletterSubscriber,
+  createProduct,
+  createProductCategory,
   deleteGallery,
+  deleteCourseSubscriber,
   deleteGalleryItem,
   deleteInquiry,
   deleteNewsletterSubscriber,
+  deleteProduct,
+  deleteProductCategory,
   findNewsletterSubscriberByEmail,
   getGalleryById,
   getGalleryBySlug,
   getGalleryItemById,
   getMainSiteContent,
   listGalleries,
+  listCourseSubscribers,
   listInquiries,
   listNewsletterSubscribers,
+  listProductCategories,
+  getProductCategoryBySlug,
   saveMainSiteContent,
   updateGallery,
   updateGalleryItemUrl,
+  updateProduct,
+  updateProductCategory,
 } from './supabaseStore.js';
 import {
   getSupabaseAdminErrorMessage,
@@ -1161,6 +1173,147 @@ app.delete('/api/galleries/items/:id', requireAdminSession, async (request, resp
   }
 });
 
+app.get('/api/product-categories', async (_request, response, next) => {
+  try {
+    if (!ensureSupabaseConfigured(response)) return;
+    response.json(await listProductCategories());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/product-categories/:slug', async (request, response, next) => {
+  try {
+    if (!ensureSupabaseConfigured(response)) return;
+    const category = await getProductCategoryBySlug(request.params.slug);
+    if (!category) {
+      response.status(404).json({ message: 'Categoria nu a fost găsită.' });
+      return;
+    }
+    response.json(category);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/product-categories', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const title = typeof request.body?.title === 'string' ? request.body.title.trim() : '';
+    const image = typeof request.body?.image === 'string' ? request.body.image.trim() : '';
+    if (!title || !image) {
+      response.status(400).json({ message: 'Titlul și imaginea categoriei sunt obligatorii.' });
+      return;
+    }
+    const baseSlug = slugifyProductCategory(title) || 'categorie';
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await getProductCategoryBySlug(slug)) slug = `${baseSlug}-${++suffix}`;
+    await createProductCategory({ title, slug, image });
+    response.status(201).json(await listProductCategories());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/product-categories/:id', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const id = Number(request.params.id);
+    const title = typeof request.body?.title === 'string' ? request.body.title.trim() : '';
+    const image = typeof request.body?.image === 'string' ? request.body.image.trim() : '';
+    if (!Number.isFinite(id) || !title || !image) {
+      response.status(400).json({ message: 'Datele categoriei sunt invalide.' });
+      return;
+    }
+    const categories = await listProductCategories();
+    const current = categories.find((category) => category.id === id);
+    if (!current) {
+      response.status(404).json({ message: 'Categoria nu a fost găsită.' });
+      return;
+    }
+    await updateProductCategory(id, { title, slug: current.slug, image });
+    response.json(await listProductCategories());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/product-categories/:id', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const id = Number(request.params.id);
+    if (!Number.isFinite(id)) {
+      response.status(400).json({ message: 'ID invalid.' });
+      return;
+    }
+    await deleteProductCategory(id);
+    response.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+function parseProductPayload(body: unknown) {
+  if (!isPlainObject(body)) return null;
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  const description = typeof body.description === 'string' ? body.description.trim() : '';
+  const price = typeof body.price === 'string' ? body.price.trim() : '';
+  const dimensions = typeof body.dimensions === 'string' ? body.dimensions.trim() : '';
+  const images = Array.isArray(body.images)
+    ? body.images.filter((image): image is string => typeof image === 'string' && image.trim().length > 0).slice(0, 2)
+    : [];
+  if (!title || !description || !price || !dimensions || images.length < 1) return null;
+  return { title, description, price, dimensions, images };
+}
+
+app.post('/api/product-categories/:id/products', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const categoryId = Number(request.params.id);
+    const payload = parseProductPayload(request.body);
+    if (!Number.isFinite(categoryId) || !payload) {
+      response.status(400).json({ message: 'Completează toate câmpurile și adaugă una sau două imagini.' });
+      return;
+    }
+    await createProduct({ categoryId, ...payload });
+    response.status(201).json(await listProductCategories());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/products/:id', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const id = Number(request.params.id);
+    const payload = parseProductPayload(request.body);
+    if (!Number.isFinite(id) || !payload) {
+      response.status(400).json({ message: 'Datele produsului sunt invalide.' });
+      return;
+    }
+    await updateProduct(id, payload);
+    response.json(await listProductCategories());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/products/:id', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const id = Number(request.params.id);
+    if (!Number.isFinite(id)) {
+      response.status(400).json({ message: 'ID invalid.' });
+      return;
+    }
+    await deleteProduct(id);
+    response.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/newsletter-subscriptions', async (request, response, next) => {
   try {
     if (!ensureSupabaseAdminConfigured(response)) {
@@ -1241,6 +1394,61 @@ app.delete('/api/newsletter-subscriptions/:id', requireAdminSession, async (requ
   }
 });
 
+app.post('/api/course-subscribers', async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const firstName = typeof request.body?.firstName === 'string' ? request.body.firstName.trim() : '';
+    const lastName = typeof request.body?.lastName === 'string' ? request.body.lastName.trim() : '';
+    const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
+    const phone = typeof request.body?.phone === 'string' ? request.body.phone.trim() : '';
+    const gdprAccepted = request.body?.gdprAccepted === true;
+    if (!firstName || !lastName || !email || !phone || !gdprAccepted) {
+      response.status(400).json({ message: 'Completează toate câmpurile și acceptă acordul GDPR.' });
+      return;
+    }
+    if (firstName.length > 100 || lastName.length > 100 || email.length > 254 || phone.length > 30) {
+      response.status(400).json({ message: 'Unul dintre câmpuri este prea lung.' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      response.status(400).json({ message: 'Adresa de email nu este validă.' });
+      return;
+    }
+    if (!/^[+0-9\s\-()]{7,30}$/.test(phone)) {
+      response.status(400).json({ message: 'Numărul de telefon nu este valid.' });
+      return;
+    }
+    await createCourseSubscriber({ firstName, lastName, email, phone });
+    response.status(201).json({ success: true, message: 'Înscrierea a fost înregistrată.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/course-subscribers', requireAdminSession, async (_request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    response.json(await listCourseSubscribers());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/course-subscribers/:id', requireAdminSession, async (request, response, next) => {
+  try {
+    if (!ensureSupabaseAdminConfigured(response)) return;
+    const id = Number(request.params.id);
+    if (!Number.isFinite(id)) {
+      response.status(400).json({ message: 'ID invalid.' });
+      return;
+    }
+    await deleteCourseSubscriber(id);
+    response.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/inquiries - Fetch all inquiries
 app.get('/api/inquiries', requireAdminSession, async (_request, response, next) => {
   try {
@@ -1255,6 +1463,38 @@ app.get('/api/inquiries', requireAdminSession, async (_request, response, next) 
   }
 });
 
+app.post('/api/inquiries/uploads/presign', async (request, response, next) => {
+  try {
+    if (!ensureR2StorageConfigured(response)) return;
+    const files = parsePresignFilesPayload(request.body);
+    if (!files || files.length < 1 || files.length > 5) {
+      response.status(400).json({ message: 'Poți încărca între 1 și 5 fotografii.' });
+      return;
+    }
+    if (files.some((file) => !file.mimeType.startsWith('image/') || file.size <= 0 || file.size > 15 * 1024 * 1024)) {
+      response.status(400).json({ message: 'Sunt acceptate doar imagini de maximum 15 MB fiecare.' });
+      return;
+    }
+    response.json({
+      files: await createPresignedUploadAssets(
+        (filename) => joinObjectKey('uploads', 'inquiries', filename),
+        files,
+      ),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/inquiries/uploads', async (request, response) => {
+  const files = parseUploadedMediaAssets(request.body);
+  if (!files || files.length < 1 || files.length > 5 || files.some((file) => !file.mimeType.startsWith('image/'))) {
+    response.status(400).json({ message: 'Datele fotografiilor încărcate sunt invalide.' });
+    return;
+  }
+  response.json({ files });
+});
+
 // POST /api/inquiries - Submit a new inquiry
 app.post('/api/inquiries', async (request, response, next) => {
   try {
@@ -1262,7 +1502,10 @@ app.post('/api/inquiries', async (request, response, next) => {
       return;
     }
 
-    const { name, firstName, lastName, email, phone, projectDetails } = request.body;
+    const { name, firstName, lastName, email, phone, projectDetails, gdprAccepted } = request.body;
+    const images = Array.isArray(request.body?.images)
+      ? request.body.images.filter((image: unknown): image is string => typeof image === 'string' && image.trim().length > 0)
+      : [];
 
     // The form sends a single full-name field; older payloads may still send
     // firstName/lastName separately. Store the name split across the existing
@@ -1304,6 +1547,15 @@ app.post('/api/inquiries', async (request, response, next) => {
       return;
     }
 
+    if (gdprAccepted !== true) {
+      response.status(400).json({ message: 'Acordul GDPR este obligatoriu.' });
+      return;
+    }
+    if (images.length > 5) {
+      response.status(400).json({ message: 'Poți atașa maximum 5 fotografii.' });
+      return;
+    }
+
     const inquiry = await createInquiry({
       firstName: resolvedFirstName,
       lastName: resolvedLastName,
@@ -1311,6 +1563,7 @@ app.post('/api/inquiries', async (request, response, next) => {
       phone: phone.trim(),
       projectDetails: projectDetails.trim(),
       status: 'Nou',
+      images,
     });
 
     response.status(201).json(inquiry);

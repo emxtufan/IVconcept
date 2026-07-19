@@ -215,6 +215,9 @@ function uploadFileToSignedUrl(
 }
 
 function resolvePresignEndpoint(finalizeEndpoint: string) {
+  if (finalizeEndpoint === '/api/inquiries/uploads') {
+    return '/api/inquiries/uploads/presign';
+  }
   if (/^\/api\/galleries\/\d+\/upload$/.test(finalizeEndpoint)) {
     return `${finalizeEndpoint}/presign`;
   }

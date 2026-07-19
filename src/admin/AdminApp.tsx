@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { normalizeSiteContent, type CollageImage, type ImageSectionContent, type SiteContent } from '../types/siteContent';
 import GalleriesPanel from './GalleriesPanel';
+import ProductsPanel from './ProductsPanel';
 import { uploadFilesWithProgress } from './uploadClient';
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -2219,7 +2220,7 @@ function ImageSectionEditor({
   );
 }
 
-type AdminSectionKey = keyof SiteContent | 'galleries' | 'inquiries' | 'subscribers';
+type AdminSectionKey = keyof SiteContent | 'galleries' | 'products' | 'inquiries' | 'subscribers' | 'courseSubscribers';
 
 interface AdminSectionMeta {
   label: string;
@@ -2234,13 +2235,14 @@ const SECTION_ORDER: AdminSectionKey[] = [
   'imageSection',
   'logoSection',
   'textSection',
-  'cardsSection',
   'slidersSection',
   'videoCardSection',
   'reviews',
   'footer',
   'galleries',
+  'products',
   'subscribers',
+  'courseSubscribers',
   'inquiries',
 ];
 
@@ -2300,10 +2302,22 @@ const ADMIN_SECTION_META: Record<AdminSectionKey, AdminSectionMeta> = {
     usage: 'Pagina /galerie-foto',
     description: 'Administrezi galeriile separate pentru pagina dedicata de galerie foto.',
   },
+  products: {
+    label: 'Categorii & Produse',
+    usage: 'Pagina /produse',
+    description: 'Creezi categorii și adaugi produse cu titlu, descriere, imagini, preț și dimensiune.',
+    readOnly: true,
+  },
   subscribers: {
     label: 'Abonari Newsletter',
     usage: 'Date colectate din footer',
     description: 'Vezi emailurile trimise din formularul de subscribe din footer.',
+    readOnly: true,
+  },
+  courseSubscribers: {
+    label: 'Abonați cursuri',
+    usage: 'Formularul din secțiunea Cursuri',
+    description: 'Vezi persoanele înscrise la curs și datele de contact trimise cu acord GDPR.',
     readOnly: true,
   },
   inquiries: {
@@ -2323,12 +2337,26 @@ interface InquiryRecord {
   projectDetails: string;
   status: string;
   createdAt: string;
+  images: string[];
+  gdprAccepted: boolean;
+  gdprAcceptedAt: string;
 }
 
 interface NewsletterSubscriberRecord {
   id: number;
   email: string;
   source: string;
+  createdAt: string;
+}
+
+interface CourseSubscriberRecord {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  gdprAccepted: boolean;
+  gdprAcceptedAt: string;
   createdAt: string;
 }
 
@@ -2465,6 +2493,20 @@ function InquiriesPanel() {
             <p className="mt-3 whitespace-pre-wrap border-t border-[#2c2218]/10 pt-3 text-sm leading-relaxed text-[#2c2218]/60">
               {inquiry.projectDetails}
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-green-800/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-green-800">
+                GDPR acceptat · {formatInquiryDate(inquiry.gdprAcceptedAt)}
+              </span>
+            </div>
+            {inquiry.images?.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#2c2218]/10 pt-4 sm:grid-cols-3 lg:grid-cols-5">
+                {inquiry.images.map((image, index) => (
+                  <a key={image} href={image} target="_blank" rel="noreferrer" className="group block aspect-square overflow-hidden rounded-xl bg-[#2c2218]/5">
+                    <img src={image} alt={`Fotografie proiect ${index + 1}`} className="h-full w-full object-cover transition group-hover:scale-105" />
+                  </a>
+                ))}
+              </div>
+            )}
           </article>
         ))}
       </div>
@@ -2595,6 +2637,80 @@ function NewsletterSubscribersPanel() {
               >
                 {subscriber.email}
               </a>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CourseSubscribersPanel() {
+  const [subscribers, setSubscribers] = useState<CourseSubscriberRecord[] | null>(null);
+  const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/course-subscribers')
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Failed: ${response.status}`);
+        return await response.json() as CourseSubscriberRecord[];
+      })
+      .then((data) => { if (!cancelled) setSubscribers(data); })
+      .catch(() => {
+        if (!cancelled) {
+          setSubscribers([]);
+          setError('Nu am putut încărca abonații la cursuri.');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Ștergi definitiv acest abonat?')) return;
+    setDeletingId(id);
+    try {
+      const response = await fetch(`/api/course-subscribers/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Delete failed');
+      setSubscribers((items) => items?.filter((item) => item.id !== id) ?? null);
+    } catch {
+      setError('Abonatul nu a putut fi șters.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="rounded-full border border-[#2c2218]/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#2c2218]/42">
+          {subscribers === null ? 'Se încarcă…' : `${subscribers.length} ${subscribers.length === 1 ? 'abonat' : 'abonați'}`}
+        </span>
+        <button type="button" onClick={() => setReloadKey((key) => key + 1)} className="h-10 rounded-full border border-[#2c2218]/10 px-5 text-[11px] font-semibold uppercase tracking-[0.16em]">Reîncarcă</button>
+      </div>
+      {error && <p className="mt-4 rounded-2xl border border-red-800/20 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
+      {subscribers?.length === 0 && !error && <p className="mt-6 rounded-2xl border border-[#2c2218]/10 bg-[#fbf6f0] px-5 py-6 text-sm text-[#2c2218]/55">Nu există încă înscrieri la curs.</p>}
+      <div className="mt-6 space-y-4">
+        {(subscribers ?? []).map((subscriber) => (
+          <article key={subscriber.id} className="rounded-2xl border border-[#2c2218]/10 bg-[#fbf6f0] p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">{subscriber.firstName} {subscriber.lastName}</h3>
+                <p className="mt-1 text-xs text-[#2c2218]/40">{formatInquiryDate(subscriber.createdAt)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-full border border-green-800/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-green-800">GDPR acceptat</span>
+                <button type="button" disabled={deletingId === subscriber.id} onClick={() => void handleDelete(subscriber.id)} className="rounded-full border border-red-800/20 px-3 py-1 text-[10px] font-semibold uppercase text-red-800 disabled:opacity-40">
+                  {deletingId === subscriber.id ? 'Se șterge…' : 'Șterge'}
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t border-[#2c2218]/10 pt-4 text-sm">
+              <a href={`mailto:${subscriber.email}`} className="text-[#9b744e]">{subscriber.email}</a>
+              <a href={`tel:${subscriber.phone.replace(/\s/g, '')}`}>{subscriber.phone}</a>
+              <span className="text-xs text-[#2c2218]/45">Acord: {formatInquiryDate(subscriber.gdprAcceptedAt)}</span>
             </div>
           </article>
         ))}
@@ -2946,7 +3062,7 @@ export default function AdminApp() {
   }
 
   const activeSectionMeta = ADMIN_SECTION_META[activeSection];
-  const finalIsReadonlySection = Boolean(activeSectionMeta.readOnly) || activeSection === 'galleries';
+  const finalIsReadonlySection = Boolean(activeSectionMeta.readOnly) || activeSection === 'galleries' || activeSection === 'products';
 
   return (
     <div className="grain-bg relative min-h-screen overflow-x-clip bg-[#e8e0d6] text-[#2c2218]">
@@ -3076,10 +3192,14 @@ export default function AdminApp() {
             <div className="mt-8">
               {activeSection === 'inquiries' ? (
                 <InquiriesPanel />
+              ) : activeSection === 'courseSubscribers' ? (
+                <CourseSubscribersPanel />
               ) : activeSection === 'subscribers' ? (
                 <NewsletterSubscribersPanel />
               ) : activeSection === 'galleries' ? (
                 <GalleriesPanel />
+              ) : activeSection === 'products' ? (
+                <ProductsPanel />
               ) : activeSection === 'imageSection' ? (
                 <ImageSectionEditor
                   value={draft.imageSection}

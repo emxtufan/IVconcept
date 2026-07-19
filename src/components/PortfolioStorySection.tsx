@@ -1,11 +1,52 @@
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { getSiteContent } from '../data';
 import BlurText from './BlurText';
 import ShinyText from './ShinyText';
 import SplitText from "./SplitText";
 
 export default function PortfolioStorySection() {
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', gdprAccepted: false });
+  const [submitState, setSubmitState] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [submitMessage, setSubmitMessage] = useState('');
   const content = getSiteContent().videoCardSection;
   const logoUrl = getSiteContent().logoSection.logoUrl;
+
+  useEffect(() => {
+    if (!isCourseModalOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsCourseModalOpen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isCourseModalOpen]);
+
+  const submitCourseRegistration = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitState('sending');
+    setSubmitMessage('');
+    try {
+      const response = await fetch('/api/course-subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const payload = await response.json() as { message?: string };
+      if (!response.ok) throw new Error(payload.message || 'Înscrierea nu a putut fi trimisă.');
+      setSubmitState('success');
+      setSubmitMessage('Îți mulțumim! Înscrierea a fost înregistrată.');
+      setForm({ firstName: '', lastName: '', email: '', phone: '', gdprAccepted: false });
+    } catch (error) {
+      setSubmitState('error');
+      setSubmitMessage(error instanceof Error ? error.message : 'A apărut o eroare.');
+    }
+  };
 
   return (
     <section id="povestea" className="relative z-40 border-t border-white/10 bg-[#130a01] text-white">
@@ -85,12 +126,17 @@ export default function PortfolioStorySection() {
                   {content.paragraphOne}
                 </p>
 
-                <p className="mt-8 font-sans text-[23px] font-normal leading-[1.22] tracking-[-0.035em] text-white/94 sm:text-[26px] md:text-[30px]">
+                <p className="mt-8 font-sans text-[23px] font-normal leading-[1.22] tracking-[-0.035em] text-white/50 sm:text-[26px] md:text-[18px] lowercase">
                   {content.paragraphTwo}
                 </p>
 
                 <button
                   type="button"
+                  onClick={() => {
+                    setSubmitState('idle');
+                    setSubmitMessage('');
+                    setIsCourseModalOpen(true);
+                  }}
                   className="mt-12 flex w-full max-w-[320px] items-center justify-between border-t border-white/22 pt-5 text-left font-sans text-[15px] font-semibold uppercase tracking-[0.02em] text-white/95"
                 >
                   <span>{content.buttonText}</span>
@@ -119,6 +165,33 @@ export default function PortfolioStorySection() {
           </div>
         </div>
       </div>
+      {isCourseModalOpen && typeof document !== 'undefined' ? createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-black/75 px-4 py-8 backdrop-blur-sm" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setIsCourseModalOpen(false);
+        }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="course-modal-title" className="relative w-full max-w-[620px] bg-[#ede4d8] p-6 text-[#2c2218] shadow-2xl md:p-10">
+            <button type="button" onClick={() => setIsCourseModalOpen(false)} aria-label="Închide formularul" className="absolute right-5 top-4 text-3xl font-light">×</button>
+            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#9b744e]">Cursuri IV Concept</span>
+            <h2 id="course-modal-title" className="mt-4 font-display text-4xl font-light tracking-tight">Înscrie-te la curs</h2>
+            <p className="mt-3 text-sm leading-6 text-[#2c2218]/60">Completează datele, iar noi te vom contacta cu toate detaliile.</p>
+            <form onSubmit={submitCourseRegistration} className="mt-8 grid gap-4 sm:grid-cols-2">
+              <input required maxLength={100} placeholder="Nume" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="h-12 border border-[#2c2218]/15 bg-white/55 px-4 text-sm outline-none focus:border-[#9b744e]" />
+              <input required maxLength={100} placeholder="Prenume" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="h-12 border border-[#2c2218]/15 bg-white/55 px-4 text-sm outline-none focus:border-[#9b744e]" />
+              <input required type="email" maxLength={254} placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-12 border border-[#2c2218]/15 bg-white/55 px-4 text-sm outline-none focus:border-[#9b744e]" />
+              <input required type="tel" maxLength={30} placeholder="Număr de telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-12 border border-[#2c2218]/15 bg-white/55 px-4 text-sm outline-none focus:border-[#9b744e]" />
+              <label className="flex items-start gap-3 py-3 text-xs leading-5 text-[#2c2218]/65 sm:col-span-2">
+                <input required type="checkbox" checked={form.gdprAccepted} onChange={(e) => setForm({ ...form, gdprAccepted: e.target.checked })} className="mt-1 h-4 w-4 accent-[#2c2218]" />
+                <span>Sunt de acord cu prelucrarea datelor personale pentru a fi contactat(ă) în legătură cu acest curs.</span>
+              </label>
+              <button disabled={submitState === 'sending'} className="h-12 bg-[#2c2218] px-6 text-xs font-semibold uppercase tracking-[0.18em] text-white disabled:opacity-50 sm:col-span-2">
+                {submitState === 'sending' ? 'Se trimite…' : 'Trimite înscrierea'}
+              </button>
+              {submitMessage && <p className={`text-sm sm:col-span-2 ${submitState === 'error' ? 'text-red-700' : 'text-green-800'}`}>{submitMessage}</p>}
+            </form>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
     </section>
   );
 }

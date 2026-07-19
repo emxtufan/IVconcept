@@ -42,6 +42,13 @@ function resolveSectionHref(label: string) {
   return SECTION_ANCHORS[label.trim().toLowerCase()] ?? '#';
 }
 
+function softenNewsletterLine(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed !== trimmed.toUpperCase()) return value;
+  const lower = trimmed.toLocaleLowerCase('ro-RO');
+  return lower.charAt(0).toLocaleUpperCase('ro-RO') + lower.slice(1);
+}
+
 export default function Footer() {
   const footerContent = getSiteContent().footer;
   const studioLinks = footerContent.studioLinks;
@@ -178,15 +185,19 @@ export default function Footer() {
               </div>
 
               <div className="max-w-[360px]">
-                <h3 className="text-[22px] font-semibold leading-[1.02] tracking-[-0.055em] text-white">
-                  {footerContent.newsletterLine1}
-                  <br />
-                  {footerContent.newsletterLine2}
-                  <br />
-                  {footerContent.newsletterLine3}
+                <h3 className="max-w-[320px] font-sans">
+                  <span className="block text-[19px] font-semibold uppercase leading-[1.15] tracking-[0.035em] text-white sm:text-[20px]">
+                    {footerContent.newsletterLine1}
+                  </span>
+                  <span className="mt-3 block text-[14px] font-normal leading-[1.55] tracking-[-0.005em] text-white/65">
+                    {softenNewsletterLine(footerContent.newsletterLine2)}
+                  </span>
+                  <span className="mt-1 block text-[14px] font-normal leading-[1.55] tracking-[-0.005em] text-white/65">
+                    {softenNewsletterLine(footerContent.newsletterLine3)}
+                  </span>
                 </h3>
 
-                <form className="mt-11" onSubmit={handleNewsletterSubmit}>
+                <form className="mt-8" onSubmit={handleNewsletterSubmit}>
                   <input
                     type="email"
                     value={newsletterEmail}

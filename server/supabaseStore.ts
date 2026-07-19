@@ -71,6 +71,97 @@ export interface InquiryEntity {
   projectDetails: string;
   createdAt: Date;
   status: string;
+  images: string[];
+  gdprAccepted: boolean;
+  gdprAcceptedAt: Date;
+}
+
+interface ProductCategoryRow {
+  id: number; title: string; slug: string; image: string; created_at: string; updated_at: string;
+}
+
+interface ProductRow {
+  id: number; category_id: number; title: string; description: string; price: string;
+  dimensions: string; images: unknown; created_at: string; updated_at: string;
+}
+
+function mapProductRow(row: ProductRow) {
+  return {
+    id: Number(row.id),
+    categoryId: Number(row.category_id),
+    title: row.title,
+    description: row.description,
+    price: row.price,
+    dimensions: row.dimensions,
+    images: Array.isArray(row.images) ? row.images.filter((item): item is string => typeof item === 'string') : [],
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+async function fetchProducts(categoryIds: number[]) {
+  if (!categoryIds.length) return new Map<number, ReturnType<typeof mapProductRow>[]>();
+  const { data, error } = await getPublicClient().from('products')
+    .select('id,category_id,title,description,price,dimensions,images,created_at,updated_at')
+    .in('category_id', categoryIds).order('created_at', { ascending: true });
+  throwIfSupabaseError(error, 'Failed to load products from Supabase');
+  const result = new Map<number, ReturnType<typeof mapProductRow>[]>();
+  for (const row of (data ?? []) as ProductRow[]) {
+    const product = mapProductRow(row);
+    result.set(product.categoryId, [...(result.get(product.categoryId) ?? []), product]);
+  }
+  return result;
+}
+
+export async function listProductCategories() {
+  const { data, error } = await getPublicClient().from('product_categories')
+    .select('id,title,slug,image,created_at,updated_at').order('created_at', { ascending: true });
+  throwIfSupabaseError(error, 'Failed to load product categories from Supabase');
+  const rows = (data ?? []) as ProductCategoryRow[];
+  const products = await fetchProducts(rows.map((row) => Number(row.id)));
+  return rows.map((row) => ({
+    id: Number(row.id), title: row.title, slug: row.slug, image: row.image,
+    createdAt: new Date(row.created_at), updatedAt: new Date(row.updated_at),
+    products: products.get(Number(row.id)) ?? [],
+  }));
+}
+
+export async function getProductCategoryBySlug(slug: string) {
+  const categories = await listProductCategories();
+  return categories.find((category) => category.slug === slug) ?? null;
+}
+
+export async function createProductCategory(values: { title: string; slug: string; image: string }) {
+  const { error } = await getAdminClient().from('product_categories').insert(values);
+  throwIfSupabaseError(error, 'Failed to create product category');
+}
+
+export async function updateProductCategory(id: number, values: { title: string; slug: string; image: string }) {
+  const { error } = await getAdminClient().from('product_categories').update(values).eq('id', id);
+  throwIfSupabaseError(error, 'Failed to update product category');
+}
+
+export async function deleteProductCategory(id: number) {
+  const { error } = await getAdminClient().from('product_categories').delete().eq('id', id);
+  throwIfSupabaseError(error, 'Failed to delete product category');
+}
+
+export async function createProduct(values: { categoryId: number; title: string; description: string; price: string; dimensions: string; images: string[] }) {
+  const { error } = await getAdminClient().from('products').insert({
+    category_id: values.categoryId, title: values.title, description: values.description,
+    price: values.price, dimensions: values.dimensions, images: values.images,
+  });
+  throwIfSupabaseError(error, 'Failed to create product');
+}
+
+export async function updateProduct(id: number, values: { title: string; description: string; price: string; dimensions: string; images: string[] }) {
+  const { error } = await getAdminClient().from('products').update(values).eq('id', id);
+  throwIfSupabaseError(error, 'Failed to update product');
+}
+
+export async function deleteProduct(id: number) {
+  const { error } = await getAdminClient().from('products').delete().eq('id', id);
+  throwIfSupabaseError(error, 'Failed to delete product');
 }
 
 function getPublicClient() {
@@ -161,6 +252,9 @@ function mapInquiry(row: {
   project_details: string;
   created_at: string;
   status: string;
+  images: unknown;
+  gdpr_accepted: boolean;
+  gdpr_accepted_at: string;
 }): InquiryEntity {
   return {
     id: Number(row.id),
@@ -171,6 +265,9 @@ function mapInquiry(row: {
     projectDetails: row.project_details,
     createdAt: new Date(row.created_at),
     status: row.status,
+    images: Array.isArray(row.images) ? row.images.filter((item): item is string => typeof item === 'string') : [],
+    gdprAccepted: row.gdpr_accepted,
+    gdprAcceptedAt: new Date(row.gdpr_accepted_at),
   };
 }
 
@@ -506,11 +603,56 @@ export async function deleteNewsletterSubscriber(id: number) {
   throwIfSupabaseError(error, 'Failed to delete newsletter subscriber from Supabase');
 }
 
+export interface CourseSubscriberEntity {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  gdprAccepted: boolean;
+  gdprAcceptedAt: Date;
+  createdAt: Date;
+}
+
+function mapCourseSubscriber(row: {
+  id: number; first_name: string; last_name: string; email: string; phone: string;
+  gdpr_accepted: boolean; gdpr_accepted_at: string; created_at: string;
+}): CourseSubscriberEntity {
+  return {
+    id: Number(row.id), firstName: row.first_name, lastName: row.last_name,
+    email: row.email, phone: row.phone, gdprAccepted: row.gdpr_accepted,
+    gdprAcceptedAt: new Date(row.gdpr_accepted_at), createdAt: new Date(row.created_at),
+  };
+}
+
+const courseSubscriberColumns = 'id,first_name,last_name,email,phone,gdpr_accepted,gdpr_accepted_at,created_at';
+
+export async function createCourseSubscriber(values: { firstName: string; lastName: string; email: string; phone: string }) {
+  const { data, error } = await getAdminClient().from('course_subscribers').insert({
+    first_name: values.firstName, last_name: values.lastName, email: values.email,
+    phone: values.phone, gdpr_accepted: true,
+  }).select(courseSubscriberColumns).single();
+  throwIfSupabaseError(error, 'Failed to save course subscriber');
+  return mapCourseSubscriber(data as Parameters<typeof mapCourseSubscriber>[0]);
+}
+
+export async function listCourseSubscribers() {
+  const { data, error } = await getAdminClient().from('course_subscribers')
+    .select(courseSubscriberColumns).order('created_at', { ascending: false });
+  throwIfSupabaseError(error, 'Failed to load course subscribers');
+  return (data ?? []).map((row) => mapCourseSubscriber(row as Parameters<typeof mapCourseSubscriber>[0]));
+}
+
+export async function deleteCourseSubscriber(id: number) {
+  const { error } = await getAdminClient().from('course_subscribers').delete().eq('id', id);
+  throwIfSupabaseError(error, 'Failed to delete course subscriber');
+}
+
 export async function listInquiries() {
   const client = getAdminClient();
   const { data, error } = await client
     .from('inquiries')
-    .select('id,first_name,last_name,email,phone,project_details,created_at,status')
+    .select('id,first_name,last_name,email,phone,project_details,images,gdpr_accepted,gdpr_accepted_at,created_at,status')
     .order('created_at', { ascending: false });
 
   throwIfSupabaseError(error, 'Failed to load inquiries from Supabase');
@@ -525,6 +667,9 @@ export async function listInquiries() {
       project_details: string;
       created_at: string;
       status: string;
+      images: unknown;
+      gdpr_accepted: boolean;
+      gdpr_accepted_at: string;
     }),
   );
 }
@@ -536,6 +681,7 @@ export async function createInquiry(values: {
   phone: string;
   projectDetails: string;
   status: string;
+  images: string[];
 }) {
   const client = getAdminClient();
   const { data, error } = await client
@@ -547,8 +693,10 @@ export async function createInquiry(values: {
       phone: values.phone,
       project_details: values.projectDetails,
       status: values.status,
+      images: values.images,
+      gdpr_accepted: true,
     })
-    .select('id,first_name,last_name,email,phone,project_details,created_at,status')
+    .select('id,first_name,last_name,email,phone,project_details,images,gdpr_accepted,gdpr_accepted_at,created_at,status')
     .single();
 
   throwIfSupabaseError(error, 'Failed to save inquiry to Supabase');
@@ -562,6 +710,9 @@ export async function createInquiry(values: {
     project_details: string;
     created_at: string;
     status: string;
+    images: unknown;
+    gdpr_accepted: boolean;
+    gdpr_accepted_at: string;
   });
 }
 
