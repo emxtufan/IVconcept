@@ -574,15 +574,17 @@
     "newsletterButtonText": "SUBSCRIBE NOW",
     "newsletterDescription": "No spam. Just honest design thinking delivered to your inbox once a quarter.",
     "socialLinks": [
-      "Instagram",
-      "Pinterest",
-      "X (Twitter)",
-      "LinkedIn",
-      "Behance"
+      { "label": "Instagram", "url": "" },
+      { "label": "TikTok", "url": "" },
+      { "label": "Pinterest", "url": "" },
+      { "label": "Facebook", "url": "" },
+      { "label": "LinkedIn", "url": "" }
     ],
     "imageUrl": "https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&w=2200&q=80",
     "copyright": "\u00a9 2026 Aveon Design. All rights reserved.",
     "craftedText": "Crafted with care in Brooklyn, NY.",
+    "developerCreditText": "Website creat și întreținut de Esa Coder Solutions ->",
+    "developerCreditUrl": "https://esa-coder-solutions.com/",
     "privacyPolicyText": "Privacy Policy",
     "termsText": "Terms & Conditions",
     "wordmark": "Av\u00e9on Studio"

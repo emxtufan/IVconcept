@@ -150,6 +150,11 @@ export interface ReviewsSectionContent {
   items: ReviewItem[];
 }
 
+export interface SocialLink {
+  label: string;
+  url: string;
+}
+
 export interface FooterContent {
   brandName: string;
   descriptor: string;
@@ -166,10 +171,12 @@ export interface FooterContent {
   newsletterPlaceholder: string;
   newsletterButtonText: string;
   newsletterDescription: string;
-  socialLinks: string[];
+  socialLinks: SocialLink[];
   imageUrl: string;
   copyright: string;
   craftedText: string;
+  developerCreditText: string;
+  developerCreditUrl: string;
   privacyPolicyText: string;
   termsText: string;
   wordmark: string;
@@ -309,6 +316,24 @@ export function normalizeSlidersSectionContent(content: SlidersSectionContent): 
   };
 }
 
+export function normalizeFooterContent(content: FooterContent): FooterContent {
+  const rawLinks = Array.isArray(content.socialLinks) ? content.socialLinks : [];
+  return {
+    ...content,
+    developerCreditText: content.developerCreditText ?? 'Website creat și întreținut de ESA-Coder Solutions',
+    developerCreditUrl: content.developerCreditUrl ?? 'https://esa-coder.com',
+    socialLinks: rawLinks.map((link) => {
+      if (typeof link === 'string') {
+        return { label: link, url: '' };
+      }
+      return {
+        label: typeof link?.label === 'string' ? link.label : '',
+        url: typeof link?.url === 'string' ? link.url : '',
+      };
+    }),
+  };
+}
+
 export function normalizeSiteContent(content: SiteContent): SiteContent {
   return {
     ...content,
@@ -317,5 +342,6 @@ export function normalizeSiteContent(content: SiteContent): SiteContent {
     slidersSection: normalizeSlidersSectionContent(content.slidersSection),
     textSection: normalizeTextSectionContent(content.textSection),
     reviews: normalizeReviewsSectionContent(content.reviews),
+    footer: normalizeFooterContent(content.footer),
   };
 }

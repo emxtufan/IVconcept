@@ -8,10 +8,10 @@ interface MenuDrawerProps {
 }
 
 const MENU_LINKS = [
-  { label: 'Home', href: '#hero' },
-  { label: 'About me', href: '#despre' },
+  { label: 'Acasa', href: '#hero' },
+  { label: 'Despre noi', href: '#despre' },
   { label: 'Galerie foto', href: '#gallery-section' },
-  { label: 'Piesele', href: '#lucrari' },
+  { label: 'Lucrari', href: '#lucrari' },
   { label: 'Pasii de colaborare', href: '#services' },
   { label: 'Proiecte pereti', href: '#proiecte' },
   { label: 'Cursuri', href: '#povestea' },
