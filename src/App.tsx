@@ -22,6 +22,23 @@ import { getSiteContent } from './data';
 import BlurText from './components/BlurText';
 import FormSection from './components/formsection';
 
+function getSameOriginWebglImageUrl(value: string) {
+  if (!value.trim()) return '';
+
+  try {
+    const parsed = new URL(value, window.location.origin);
+    const uploadsIndex = parsed.pathname.indexOf('/uploads/');
+
+    if (uploadsIndex >= 0) {
+      return parsed.pathname.slice(uploadsIndex);
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
 export default function App() {
   const isGalleryWallRoute = window.location.pathname === '/galerie-foto';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -174,7 +191,7 @@ export default function App() {
           className="relative min-h-screen md:min-h-[860px] lg:min-h-[920px] xl:min-h-[980px] w-full overflow-hidden bg-[#e8e0d6] z-10 flex flex-col justify-between"
         >
           <SplashCursor
-            BACKGROUND_IMAGE={heroContent.backgroundImage}
+            BACKGROUND_IMAGE={getSameOriginWebglImageUrl(heroContent.backgroundImage)}
             DENSITY_DISSIPATION={1.5}
             VELOCITY_DISSIPATION={3}
             PRESSURE={0.55}
