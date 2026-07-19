@@ -40,7 +40,27 @@ const SECTION_ANCHORS: Record<string, string> = {
 };
 
 function resolveSectionHref(label: string) {
-  return SECTION_ANCHORS[label.trim().toLowerCase()] ?? '#';
+  const normalizedLabel = label
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  if (SECTION_ANCHORS[normalizedLabel]) {
+    return SECTION_ANCHORS[normalizedLabel];
+  }
+
+  if (normalizedLabel.includes('galer')) return '#gallery-section';
+  if (normalizedLabel.includes('acas') || normalizedLabel.includes('home')) return '#hero';
+  if (normalizedLabel.includes('despre') || normalizedLabel.includes('about')) return '#despre';
+  if (normalizedLabel.includes('pies') || normalizedLabel.includes('lucr') || normalizedLabel.includes('portof')) return '#lucrari';
+  if (normalizedLabel.includes('servic') || normalizedLabel.includes('colabor')) return '#services';
+  if (normalizedLabel.includes('proiect') || normalizedLabel.includes('peret')) return '#proiecte';
+  if (normalizedLabel.includes('curs') || normalizedLabel.includes('povest')) return '#povestea';
+  if (normalizedLabel.includes('react') || normalizedLabel.includes('recenz') || normalizedLabel.includes('review')) return '#recenzii';
+  if (normalizedLabel.includes('contact') || normalizedLabel.includes('ofert')) return '#contact';
+
+  return '#hero';
 }
 
 function softenNewsletterLine(value: string) {
