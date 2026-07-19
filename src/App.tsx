@@ -172,16 +172,7 @@ export default function App() {
           onMouseEnter={() => setIsHoveringHero(true)}
           onMouseLeave={() => setIsHoveringHero(false)}
           className="relative min-h-screen md:min-h-[860px] lg:min-h-[920px] xl:min-h-[980px] w-full overflow-hidden bg-[#e8e0d6] z-10 flex flex-col justify-between"
-          style={heroContent.backgroundImage ? {
-            backgroundImage: `url("${heroContent.backgroundImage.replace(/"/g, '\\"')}")`,
-            backgroundPosition: 'center',
-            backgroundSize: 'cover',
-            backgroundRepeat: 'no-repeat',
-          } : undefined}
         >
-          {heroContent.backgroundImage && (
-            <div className="pointer-events-none absolute inset-0 z-0 bg-[#e8e0d6]/38" />
-          )}
           <SplashCursor
             BACKGROUND_IMAGE={heroContent.backgroundImage}
             DENSITY_DISSIPATION={1.5}
@@ -252,7 +243,6 @@ export default function App() {
           </motion.div>
 
           <IntroLogoSection
-            backgroundImage={heroContent.backgroundImage}
             logoUrl={showIntroLogo ? logoSection.logoUrl : undefined}
             logoAlt={logoSection.logoAlt}
             brandName={introBrandName}

@@ -5,7 +5,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 interface IntroLogoSectionProps {
-  backgroundImage?: string;
   logoUrl?: string;
   logoAlt?: string;
   brandName: string;
@@ -33,7 +32,6 @@ function getDockMetrics(source: HTMLElement, target: HTMLElement) {
 }
 
 export default function IntroLogoSection({
-  backgroundImage,
   logoUrl,
   logoAlt = 'Brand logo',
   brandName,
@@ -155,27 +153,21 @@ export default function IntroLogoSection({
       aria-hidden="true"
       className="intro-logo-overlay pointer-events-none absolute inset-0 z-[60]"
     >
-      <div
-        ref={backdropRef}
-        className="absolute inset-0 bg-[#e8e0d6] bg-cover bg-center bg-no-repeat"
-        style={backgroundImage ? {
-          backgroundImage: `linear-gradient(rgba(232, 224, 214, 0.38), rgba(232, 224, 214, 0.38)), url("${backgroundImage.replace(/"/g, '\\"')}")`,
-        } : undefined}
-      />
+      <div ref={backdropRef} className="absolute inset-0 bg-[#e8e0d6]" />
 
-      <div className="absolute inset-0 flex items-center justify-center px-6">
+      <div className="absolute inset-x-0 top-0 flex h-[100svh] items-center justify-center px-6">
         <div ref={introLogoRef} className="intro-logo flex items-center justify-center">
           {showImageLogo ? (
             <img
               src={logoUrl}
               alt={logoAlt}
-              className="h-auto max-h-[300px] w-full max-w-[430px] object-contain sm:max-w-[620px] md:max-w-[840px] lg:max-w-[1020px]"
+              className="h-auto max-h-[150px] w-full max-w-[280px] object-contain sm:max-h-[170px] sm:max-w-[360px] md:max-h-[190px] md:max-w-[440px] lg:max-h-[210px] lg:max-w-[520px]"
               referrerPolicy="no-referrer"
               fetchPriority="high"
               loading="eager"
             />
           ) : (
-            <div className="font-sans text-[72px] font-bold uppercase leading-none tracking-[-0.06em] text-[#2c2218] sm:text-[104px] md:text-[138px] lg:text-[172px]">
+            <div className="font-sans text-[54px] font-bold uppercase leading-none tracking-[-0.06em] text-[#2c2218] sm:text-[72px] md:text-[92px] lg:text-[112px]">
               {brandName}
             </div>
           )}
@@ -184,7 +176,7 @@ export default function IntroLogoSection({
 
       <div
         ref={scrollHintRef}
-        className="absolute inset-x-0 bottom-5 flex flex-col items-center gap-3 text-[#2c2218] sm:bottom-7 md:bottom-9"
+        className="absolute inset-x-0 top-[calc(100svh-76px)] flex flex-col items-center gap-2 text-[#2c2218]"
       >
         <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.28em] sm:text-[11px]">
           Scroll pentru a descoperi
