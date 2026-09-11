@@ -155,6 +155,35 @@ export interface SocialLink {
   url: string;
 }
 
+export interface CourseOfferContent {
+  enabled: boolean;
+  title: string;
+  description: string;
+  imageUrl: string;
+  buttonText: string;
+  successMessage: string;
+}
+
+export const DEFAULT_COURSE_OFFER: CourseOfferContent = {
+  enabled: true,
+  title: 'Înscrie-te la cursul IV Concept',
+  description: 'Descoperă tehnicile din spatele finisajelor decorative IV Concept. Lasă-ne adresa de email pentru înscriere și te vom contacta cu oferta și detaliile cursului.',
+  imageUrl: 'https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80',
+  buttonText: 'Mă înscriu la curs',
+  successMessage: 'Înscrierea ta a fost înregistrată. Te vom contacta pe email cu oferta și detaliile cursului.',
+};
+
+export function normalizeCourseOffer(content?: Partial<CourseOfferContent>): CourseOfferContent {
+  return {
+    enabled: typeof content?.enabled === 'boolean' ? content.enabled : DEFAULT_COURSE_OFFER.enabled,
+    title: typeof content?.title === 'string' ? content.title : DEFAULT_COURSE_OFFER.title,
+    description: typeof content?.description === 'string' ? content.description : DEFAULT_COURSE_OFFER.description,
+    imageUrl: typeof content?.imageUrl === 'string' && content.imageUrl.trim() ? content.imageUrl : DEFAULT_COURSE_OFFER.imageUrl,
+    buttonText: typeof content?.buttonText === 'string' ? content.buttonText : DEFAULT_COURSE_OFFER.buttonText,
+    successMessage: typeof content?.successMessage === 'string' ? content.successMessage : DEFAULT_COURSE_OFFER.successMessage,
+  };
+}
+
 export interface FooterContent {
   brandName: string;
   descriptor: string;
@@ -183,6 +212,7 @@ export interface FooterContent {
 }
 
 export interface SiteContent {
+  courseOffer: CourseOfferContent;
   hero: HeroContent;
   about: AboutContent;
   imageSection: ImageSectionContent;
@@ -337,6 +367,7 @@ export function normalizeFooterContent(content: FooterContent): FooterContent {
 export function normalizeSiteContent(content: SiteContent): SiteContent {
   return {
     ...content,
+    courseOffer: normalizeCourseOffer(content.courseOffer),
     hero: normalizeHeroContent(content.hero),
     logoSection: normalizeLogoSectionContent(content.logoSection, content.textSection),
     slidersSection: normalizeSlidersSectionContent(content.slidersSection),

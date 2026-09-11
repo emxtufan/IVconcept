@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useReducedMotion } from 'motion/react';
 import BlurText from './BlurText';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -71,6 +72,7 @@ const BACK_FACE_STYLE = {
 } as const;
 
 export default function ServicesScrollSection() {
+  const reducedMotion = useReducedMotion();
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const sectionRef = useRef<HTMLElement>(null);
   const flipperRef = useRef<HTMLDivElement>(null);
@@ -79,6 +81,7 @@ export default function ServicesScrollSection() {
   const lastIndex = SERVICE_CARDS.length - 1;
 
   useLayoutEffect(() => {
+    if (reducedMotion) return;
     const HEADER_GAP = 40;
     const stickyOffset = () => (headerRef.current?.offsetHeight ?? 200) + HEADER_GAP;
 
@@ -140,7 +143,7 @@ export default function ServicesScrollSection() {
       ro.disconnect();
       ctx.revert();
     };
-  }, [lastIndex]);
+  }, [lastIndex, reducedMotion]);
 
   const cardInner = (service: (typeof SERVICE_CARDS)[number]) => (
     <div className="relative z-10 flex min-h-[22rem] md:min-h-[24rem] flex-col justify-between gap-8">
@@ -155,6 +158,7 @@ export default function ServicesScrollSection() {
 
       <div className="flex flex-1 items-center justify-center py-2">
         <img
+          loading="lazy"
           src={service.image}
           alt={service.title}
           className="h-28 w-auto object-contain md:h-40"
@@ -243,6 +247,20 @@ export default function ServicesScrollSection() {
       </div>
     </div>
   );
+
+  if (reducedMotion) {
+    return (
+      <section id="services" className="relative z-30 bg-[#e8e0d6] px-6 py-20 text-[#2c2218] md:px-16">
+        <div className="mx-auto max-w-[1140px]">
+          <h2 className="font-display text-3xl md:text-5xl">Cum procedăm</h2>
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {SERVICE_CARDS.map((service) => <article key={service.id} className={CARD_FACE}>{cardInner(service)}</article>)}
+          </div>
+          <a href="#contact" className="mt-8 inline-block border-b border-[#2c2218] pb-2 font-semibold">Contactează-ne →</a>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section

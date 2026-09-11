@@ -469,6 +469,13 @@ export async function updateGalleryItemUrl(id: number, url: string) {
   throwIfSupabaseError(error, 'Failed to update gallery item URL in Supabase');
 }
 
+export async function renameGalleryWithItems(galleryId: number, name: string, slug: string, previousSlug: string, items: Array<{ id: number; url: string }>) {
+  const { error } = await getAdminClient().rpc('rename_gallery_with_items', {
+    p_gallery_id: galleryId, p_name: name, p_slug: slug, p_previous_slug: previousSlug, p_items: items,
+  });
+  throwIfSupabaseError(error, 'Failed to rename gallery atomically; apply backend_security_migration.sql');
+}
+
 export async function deleteGallery(id: number) {
   const client = getAdminClient();
   const { error } = await client.from('galleries').delete().eq('id', id);
@@ -487,21 +494,12 @@ export async function createGalleryItems(
     height: number | null;
     sortOrder: number;
   }>,
+  expectedSlug: string,
 ) {
   const client = getAdminClient();
-  const { error } = await client.from('gallery_items').insert(
-    files.map((file) => ({
-      gallery_id: galleryId,
-      url: file.url,
-      filename: file.filename,
-      original_name: file.originalName,
-      size: file.size,
-      mime_type: file.mimeType,
-      width: file.width,
-      height: file.height,
-      sort_order: file.sortOrder,
-    })),
-  );
+  const { error } = await client.rpc('add_gallery_items', {
+    p_gallery_id: galleryId, p_expected_slug: expectedSlug, p_files: files,
+  });
 
   throwIfSupabaseError(error, 'Failed to save gallery items to Supabase');
 }
@@ -627,10 +625,11 @@ function mapCourseSubscriber(row: {
 
 const courseSubscriberColumns = 'id,first_name,last_name,email,phone,gdpr_accepted,gdpr_accepted_at,created_at';
 
-export async function createCourseSubscriber(values: { firstName: string; lastName: string; email: string; phone: string }) {
+export async function createCourseSubscriber(values: { firstName: string; lastName: string; email: string; phone: string; source?: string }) {
   const { data, error } = await getAdminClient().from('course_subscribers').insert({
     first_name: values.firstName, last_name: values.lastName, email: values.email,
     phone: values.phone, gdpr_accepted: true,
+    source: values.source ?? 'registration',
   }).select(courseSubscriberColumns).single();
   throwIfSupabaseError(error, 'Failed to save course subscriber');
   return mapCourseSubscriber(data as Parameters<typeof mapCourseSubscriber>[0]);
@@ -682,21 +681,10 @@ export async function createInquiry(values: {
   projectDetails: string;
   status: string;
   images: string[];
-}) {
+}, attachmentObjectKeys: string[] = []) {
   const client = getAdminClient();
   const { data, error } = await client
-    .from('inquiries')
-    .insert({
-      first_name: values.firstName,
-      last_name: values.lastName,
-      email: values.email,
-      phone: values.phone,
-      project_details: values.projectDetails,
-      status: values.status,
-      images: values.images,
-      gdpr_accepted: true,
-    })
-    .select('id,first_name,last_name,email,phone,project_details,images,gdpr_accepted,gdpr_accepted_at,created_at,status')
+    .rpc('create_inquiry_with_attachments', { p_values: values, p_attachments: attachmentObjectKeys })
     .single();
 
   throwIfSupabaseError(error, 'Failed to save inquiry to Supabase');
@@ -714,6 +702,44 @@ export async function createInquiry(values: {
     gdpr_accepted: boolean;
     gdpr_accepted_at: string;
   });
+}
+
+export async function getInquiryById(id: number) {
+  const { data, error } = await getAdminClient().from('inquiries')
+    .select('id,first_name,last_name,email,phone,project_details,images,gdpr_accepted,gdpr_accepted_at,created_at,status')
+    .eq('id', id).maybeSingle();
+  throwIfSupabaseError(error, 'Failed to load inquiry');
+  return data ? mapInquiry(data as Parameters<typeof mapInquiry>[0]) : null;
+}
+
+export async function hasInquiryAttachment(objectKey: string) {
+  const { data, error } = await getAdminClient().from('inquiry_attachments').select('object_key').eq('object_key', objectKey).maybeSingle();
+  throwIfSupabaseError(error, 'Failed to authorize inquiry attachment');
+  return Boolean(data);
+}
+
+export async function registerPendingInquiryUploads(objectKeys: string[]) {
+  const { error } = await getAdminClient().from('pending_inquiry_uploads')
+    .insert(objectKeys.map((object_key) => ({ object_key })));
+  throwIfSupabaseError(error, 'Failed to register pending inquiry uploads; apply backend_security_migration.sql');
+}
+
+export async function listExpiredInquiryUploads() {
+  const { data, error } = await getAdminClient().rpc('expired_inquiry_uploads', { p_limit: 20 });
+  throwIfSupabaseError(error, 'Failed to load expired inquiry uploads');
+  return (data ?? []).map((row) => row.object_key as string);
+}
+
+export async function removePendingInquiryUpload(objectKey: string) {
+  const { error } = await getAdminClient().from('pending_inquiry_uploads').delete().eq('object_key', objectKey);
+  throwIfSupabaseError(error, 'Failed to remove pending inquiry upload');
+}
+
+export async function isMediaAssetReferenced(urls: string[]) {
+  const { data, error } = await getAdminClient().rpc('is_media_asset_referenced', { p_urls: [...new Set(urls)] });
+  throwIfSupabaseError(error, 'Could not verify shared media references; file retained');
+  if (typeof data !== 'boolean') throw new Error('Could not verify shared media references; file retained');
+  return data;
 }
 
 export async function deleteInquiry(id: number) {

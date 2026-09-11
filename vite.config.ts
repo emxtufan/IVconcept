@@ -12,7 +12,17 @@ export default defineConfig(() => {
       },
     },
     build: {
-      sourcemap: true,
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react-vendor';
+            if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return 'motion-vendor';
+            if (id.includes('/node_modules/gsap/')) return 'gsap-vendor';
+          },
+        },
+      },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

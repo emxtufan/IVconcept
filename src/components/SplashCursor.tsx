@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
 
 interface SplashCursorProps {
   SIM_RESOLUTION?: number;
@@ -75,10 +76,13 @@ export default function SplashCursor({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const syncAnimationRef = useRef<(() => void) | null>(null);
 
   const isActiveRef = useRef(isActive);
   useEffect(() => {
     isActiveRef.current = isActive;
+    syncAnimationRef.current?.();
   }, [isActive]);
 
   useEffect(() => {
@@ -91,12 +95,12 @@ export default function SplashCursor({
   }, []);
 
   useEffect(() => {
-    if (!isDesktop) return;
+    if (!isDesktop || reducedMotion) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let isActive = true;
+    let disposed = false;
 
     const config = {
       SIM_RESOLUTION,
@@ -123,6 +127,19 @@ export default function SplashCursor({
     const context = getWebGLContext(canvas);
     if (!context) return;
     const { gl, ext } = context;
+    if (!ext.formatRGBA || !ext.formatRG || !ext.formatR) return;
+    const textures = new Set<WebGLTexture>();
+    const framebuffers = new Set<WebGLFramebuffer>();
+    const buffers = new Set<WebGLBuffer>();
+    const shaders = new Set<WebGLShader>();
+    const programs = new Set<WebGLProgram>();
+    function disposeFBO(target: any) {
+      if (!target) return;
+      gl.deleteTexture(target.texture);
+      gl.deleteFramebuffer(target.fbo);
+      textures.delete(target.texture);
+      framebuffers.delete(target.fbo);
+    }
 
     if (!ext.supportLinearFiltering) {
       config.DYE_RESOLUTION = 256;
@@ -209,6 +226,8 @@ export default function SplashCursor({
       glCtx.bindFramebuffer(glCtx.FRAMEBUFFER, fbo);
       glCtx.framebufferTexture2D(glCtx.FRAMEBUFFER, glCtx.COLOR_ATTACHMENT0, glCtx.TEXTURE_2D, texture, 0);
       const status = glCtx.checkFramebufferStatus(glCtx.FRAMEBUFFER);
+      glCtx.deleteTexture(texture);
+      glCtx.deleteFramebuffer(fbo);
       return status === glCtx.FRAMEBUFFER_COMPLETE;
     }
 
@@ -256,6 +275,7 @@ export default function SplashCursor({
 
     function createProgram(vertexShader: WebGLShader, fragmentShader: WebGLShader) {
       const program = gl.createProgram();
+      if (program) programs.add(program);
       if (!program) throw new Error('Failed to create WebGL program');
       gl.attachShader(program, vertexShader);
       gl.attachShader(program, fragmentShader);
@@ -282,6 +302,7 @@ export default function SplashCursor({
     function compileShader(type: number, source: string, keywords?: string[]) {
       const finalSource = addKeywords(source, keywords);
       const shader = gl.createShader(type);
+      if (shader) shaders.add(shader);
       if (!shader) throw new Error('Failed to create WebGL shader');
       gl.shaderSource(shader, finalSource);
       gl.compileShader(shader);
@@ -597,9 +618,11 @@ export default function SplashCursor({
 
     const blit = (() => {
       const buffer = gl.createBuffer();
+      if (buffer) buffers.add(buffer);
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
       const elementBuffer = gl.createBuffer();
+      if (elementBuffer) buffers.add(elementBuffer);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -623,6 +646,7 @@ export default function SplashCursor({
 
     // Initialize custom background image texture
     const bgTexture = gl.createTexture();
+    if (bgTexture) textures.add(bgTexture);
     gl.bindTexture(gl.TEXTURE_2D, bgTexture);
     // Initialize with a 1x1 fully transparent pixel while downloading
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
@@ -632,6 +656,7 @@ export default function SplashCursor({
     let imageAspect = 1.5; // default initial fallback aspect ratio
 
     bgImage.onload = () => {
+      if (disposed) return;
       gl.bindTexture(gl.TEXTURE_2D, bgTexture);
       // Flip texture Y-axis globally to match WebGL coordinate system
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -698,6 +723,10 @@ export default function SplashCursor({
         );
       }
 
+      disposeFBO(divergence);
+      disposeFBO(curl);
+      disposeFBO(pressure?.read);
+      disposeFBO(pressure?.write);
       divergence = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
       curl = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
       pressure = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
@@ -706,6 +735,7 @@ export default function SplashCursor({
     function createFBO(w: number, h: number, internalFormat: number, format: number, type: any, param: number) {
       gl.activeTexture(gl.TEXTURE0);
       const texture = gl.createTexture();
+      if (texture) textures.add(texture);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
@@ -714,6 +744,7 @@ export default function SplashCursor({
       gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
 
       const fbo = gl.createFramebuffer();
+      if (fbo) framebuffers.add(fbo);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
       gl.viewport(0, 0, w, h);
@@ -769,12 +800,14 @@ export default function SplashCursor({
       copyProgram.bind();
       gl.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
       blit(newFBO);
+      disposeFBO(target);
       return newFBO;
     }
 
     function resizeDoubleFBO(target: any, w: number, h: number, internalFormat: number, format: number, type: any, param: number) {
       if (target.width === w && target.height === h) return target;
       target.read = resizeFBO(target.read, w, h, internalFormat, format, type, param);
+      disposeFBO(target.write);
       target.write = createFBO(w, h, internalFormat, format, type, param);
       target.width = w;
       target.height = h;
@@ -795,7 +828,8 @@ export default function SplashCursor({
     let colorUpdateTimer = 0.0;
 
     function updateFrame() {
-      if (!isActive) return;
+      animationFrameId.current = null;
+      if (disposed || !isActiveRef.current || document.hidden) return;
       const dt = calcDeltaTime();
       if (resizeCanvas()) initFramebuffers();
       updateColors(dt);
@@ -1104,10 +1138,24 @@ export default function SplashCursor({
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
 
-    updateFrame();
+    const syncAnimation = () => {
+      if (disposed || !isActiveRef.current || document.hidden) {
+        if (animationFrameId.current !== null) cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = null;
+      } else if (animationFrameId.current === null) {
+        lastUpdateTime = Date.now();
+        updateFrame();
+      }
+    };
+    syncAnimationRef.current = syncAnimation;
+    document.addEventListener('visibilitychange', syncAnimation);
+    syncAnimation();
 
     return () => {
-      isActive = false;
+      disposed = true;
+      syncAnimationRef.current = null;
+      document.removeEventListener('visibilitychange', syncAnimation);
+      bgImage.onload = null;
 
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
@@ -1119,10 +1167,15 @@ export default function SplashCursor({
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
+      textures.forEach((texture) => gl.deleteTexture(texture));
+      framebuffers.forEach((framebuffer) => gl.deleteFramebuffer(framebuffer));
+      buffers.forEach((buffer) => gl.deleteBuffer(buffer));
+      shaders.forEach((shader) => gl.deleteShader(shader));
+      programs.forEach((program) => gl.deleteProgram(program));
     };
-  }, [isDesktop, BACKGROUND_IMAGE]);
+  }, [isDesktop, BACKGROUND_IMAGE, reducedMotion]);
 
-  if (!isDesktop) return null;
+  if (!isDesktop || reducedMotion) return null;
 
   return (
     <div

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useReducedMotion } from 'motion/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -39,12 +40,14 @@ export default function IntroLogoSection({
   heroRef,
 }: IntroLogoSectionProps) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
+  const reducedMotion = useReducedMotion();
   const backdropRef = useRef<HTMLDivElement | null>(null);
   const introLogoRef = useRef<HTMLDivElement | null>(null);
   const scrollHintRef = useRef<HTMLDivElement | null>(null);
   const showImageLogo = Boolean(logoUrl && logoUrl.trim().length > 0);
 
   useEffect(() => {
+    if (reducedMotion) return;
     const overlay = overlayRef.current;
     const backdrop = backdropRef.current;
     const introLogo = introLogoRef.current;
@@ -145,7 +148,9 @@ export default function IntroLogoSection({
       window.removeEventListener('load', handleLoad);
       context.revert();
     };
-  }, [navbarLogoTargetRef, heroRef, showImageLogo]);
+  }, [navbarLogoTargetRef, heroRef, showImageLogo, reducedMotion]);
+
+  if (reducedMotion) return null;
 
   return (
     <div

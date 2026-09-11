@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import Lenis from 'lenis';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
 import Header from './components/Header';
 import MenuDrawer from './components/MenuDrawer';
 import ShowReel from './components/ShowReel';
@@ -21,6 +21,7 @@ import Footer from './components/footer';
 import { getSiteContent } from './data';
 import BlurText from './components/BlurText';
 import FormSection from './components/formsection';
+import CourseOfferModal from './components/CourseOfferModal';
 
 function getSameOriginWebglImageUrl(value: string) {
   if (!value.trim()) return '';
@@ -40,7 +41,10 @@ function getSameOriginWebglImageUrl(value: string) {
 }
 
 export default function App() {
-  const isGalleryWallRoute = window.location.pathname === '/galerie-foto';
+  const isGalleryWallRoute = window.location.pathname.replace(/\/+$/, '') === '/galerie-foto';
+  const courseOffer = getSiteContent().courseOffer;
+  const [isCourseOfferOpen, setIsCourseOfferOpen] = useState(() => courseOffer.enabled);
+  const prefersReducedMotion = useReducedMotion();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHoveringHero, setIsHoveringHero] = useState(false);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
@@ -52,13 +56,13 @@ export default function App() {
   const about = getSiteContent().about;
   const heroContent = getSiteContent().hero;
   const logoSection = getSiteContent().logoSection;
-  const commitment = getSiteContent().textSection;
   const introBrandName = getSiteContent().footer.brandName;
   const showIntroLogo = logoSection.logoUrl.trim().length > 0;
 
   const { scrollY } = useScroll();
 
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const lenis = new Lenis({
       autoRaf: true,
       smoothWheel: true,
@@ -74,7 +78,7 @@ export default function App() {
     return () => {
       lenis.destroy();
     };
-  }, []);
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
     const heroElement = heroRef.current;
@@ -146,6 +150,7 @@ export default function App() {
   }, [isMenuOpen]);
 
   const heroY = useTransform(scrollY, (y) => {
+    if (prefersReducedMotion) return 0;
     const heroStart = window.innerHeight || 1;
     const local = Math.max(0, y - heroStart);
     return Math.min(320, local * 0.32);
@@ -153,18 +158,23 @@ export default function App() {
 
   if (isGalleryWallRoute) {
     return (
+      <>
+      <CourseOfferModal content={courseOffer} isOpen={isCourseOfferOpen} onClose={() => setIsCourseOfferOpen(false)} />
       <Suspense fallback={<div className="min-h-screen bg-[#e8e0d6]" />}>
         <GalleryWallPage />
       </Suspense>
+      </>
     );
   }
 
   return (
     <div
       id="app-container"
-      className="min-h-screen bg-[#e8e0d6] text-[#2c2218] flex flex-col select-none relative overflow-x-clip grain-bg animate-fade-in"
+      className="min-h-screen bg-[#e8e0d6] text-[#2c2218] flex flex-col relative overflow-x-clip grain-bg animate-fade-in"
     >
       <div className="grain-overlay" />
+
+      <CourseOfferModal content={courseOffer} isOpen={isCourseOfferOpen} onClose={() => setIsCourseOfferOpen(false)} />
 
       <MenuDrawer isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
@@ -175,6 +185,7 @@ export default function App() {
           }`}
         >
           <Header
+            isMenuOpen={isMenuOpen}
             onMenuClick={() => setIsMenuOpen(true)}
             navbarLogoTargetRef={headerLogoTargetRef}
             logoUrl={showIntroLogo ? logoSection.logoUrl : undefined}
@@ -203,7 +214,7 @@ export default function App() {
             RAINBOW_MODE={false}
             position="absolute"
             zIndex={1}
-            isActive={isHeroVisible && isHoveringHero}
+            isActive={isHeroVisible && isHoveringHero && !isCourseOfferOpen && !isMenuOpen}
           />
 
           <motion.div
@@ -330,7 +341,7 @@ export default function App() {
 
       <ProjectParallaxPanels />
 
-      <PortfolioStorySection />
+      <PortfolioStorySection onOpenCourseOffer={() => setIsCourseOfferOpen(true)} />
 
       <AppleWatchGridSection />
       <FormSection />

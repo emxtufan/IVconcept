@@ -21,6 +21,7 @@ import {
 import { createPortal } from 'react-dom';
 import { getSiteContent } from '../data';
 import BlurText from './BlurText';
+import { useAccessibleDialog } from './useAccessibleDialog';
 
 interface WatchProject {
   id: string;
@@ -181,7 +182,7 @@ function HoneycombItem({
           willChange: 'transform',
         }}
         className="relative block h-full w-full overflow-hidden rounded-full border border-zinc-800 bg-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,0.45)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a880]"
-        aria-label={`Open story: ${project.title}`}
+        aria-label={`Deschide recenzia: ${project.title}`}
       >
         {previewImage ? (
           <img
@@ -267,23 +268,7 @@ export default function AppleWatchGridSection() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelected(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [selected]);
-
-  useEffect(() => {
-    if (!selected) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [selected]);
+  const reviewDialogRef = useAccessibleDialog(Boolean(selected), () => setSelected(null));
 
   // Touch gestures (coarse pointers only): after a ~10px threshold the gesture
   // locks to one direction for its whole lifetime. Horizontal swipes drive the
@@ -687,6 +672,7 @@ export default function AppleWatchGridSection() {
                   exit={{ opacity: 0 }}
                 >
                   <motion.div
+                    data-dialog-backdrop
                     className="absolute inset-0 bg-black/88 backdrop-blur-md"
                     onClick={() => setSelected(null)}
                     aria-hidden="true"
@@ -710,7 +696,10 @@ export default function AppleWatchGridSection() {
                         ? { duration: 0.15 }
                         : { type: 'spring', stiffness: 260, damping: 28 }
                     }
-                    className="relative z-10 w-full max-w-[380px] overflow-hidden rounded-[34px] border border-white/10 bg-[#090909] shadow-[0_30px_90px_rgba(0,0,0,0.78)]"
+                    className="relative z-10 w-full max-w-[min(380px,calc((100dvh-48px)*9/16))] overflow-hidden rounded-[34px] border border-white/10 bg-[#090909] shadow-[0_30px_90px_rgba(0,0,0,0.78)]"
+                    ref={reviewDialogRef}
+                    tabIndex={-1}
+                    data-lenis-prevent
                     role="dialog"
                     aria-modal="true"
                     aria-label={selected.project.title}
@@ -719,10 +708,11 @@ export default function AppleWatchGridSection() {
                       {selected.project.mediaType === 'video' ? (
                         <video
                           autoPlay
-                          loop
-                          muted
+                          controls
+                          tabIndex={0}
+                          aria-label={selected.project.title}
                           playsInline
-                          preload="auto"
+                          preload="metadata"
                           disablePictureInPicture
                           poster={selected.project.poster?.trim() || selected.project.thumbnail?.trim() || undefined}
                           className="h-full w-full object-cover"
@@ -755,13 +745,13 @@ export default function AppleWatchGridSection() {
                           type="button"
                           onClick={() => setSelected(null)}
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/12 bg-black/55 text-zinc-200 backdrop-blur-sm transition-colors duration-300 hover:border-[#c5a880] hover:text-white"
-                          aria-label="Close story"
+                          aria-label="Închide recenzia"
                         >
                           <X size={16} />
                         </button>
                       </div>
 
-                      <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
+                      <div className={`pointer-events-none absolute inset-x-0 p-4 md:p-5 ${selected.project.mediaType === 'video' ? 'bottom-12' : 'bottom-0'}`}>
                         <p className="max-w-[88%] font-sans text-[13px] leading-relaxed text-white/82">
                           {selected.project.description}
                         </p>

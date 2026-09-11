@@ -75,6 +75,7 @@ export default function FormSection() {
       projectDetails: formData.projectDetails.trim(),
       gdprAccepted: formData.gdprAccepted,
       images: [] as string[],
+      imageUploadTokens: [] as string[],
     };
 
     try {
@@ -85,6 +86,10 @@ export default function FormSection() {
           '/api/inquiries/uploads',
         );
         payload.images = uploaded.files.map((file) => file.url);
+        payload.imageUploadTokens = uploaded.files.map((file) => {
+          if (!file.uploadToken) throw new Error('Fotografia nu a putut fi verificată. Încearcă din nou.');
+          return file.uploadToken;
+        });
       }
       const response = await fetch('/api/inquiries', {
         method: 'POST',
@@ -241,7 +246,7 @@ export default function FormSection() {
                 <input
                   id="projectPhotos"
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
                   multiple
                   disabled={status === 'submitting'}
                   onChange={(event) => {

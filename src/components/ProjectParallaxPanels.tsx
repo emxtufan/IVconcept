@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useReducedMotion } from 'motion/react';
 import { getSiteContent } from '../data';
 import SplitText from "./SplitText";
 
@@ -14,11 +15,13 @@ function lerp(start: number, end: number, amount: number) {
 
 export default function ProjectParallaxPanels() {
   const projects = getSiteContent().slidersSection.panels;
+  const reducedMotion = useReducedMotion();
   const galleryRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const imagePanelRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
+    if (reducedMotion) return;
     const gallery = galleryRef.current;
     const track = trackRef.current;
 
@@ -131,7 +134,20 @@ export default function ProjectParallaxPanels() {
       resizeObserver?.disconnect();
       imageCleanup.forEach((cleanup) => cleanup());
     };
-  }, []);
+  }, [reducedMotion]);
+
+  if (reducedMotion) {
+    return (
+      <section id="proiecte" className="relative z-50 bg-[#0A0D11] text-white">
+        {projects.map((project) => (
+          <article key={project.id} className="grid gap-8 px-6 py-14 md:grid-cols-2 md:items-center md:px-14">
+            <img src={project.image || project.desktopImage || project.mobileImage} alt={project.title} loading="lazy" className="aspect-[4/3] w-full object-cover" />
+            <div><p className="text-sm text-white/70">{project.category}</p><h3 className="mt-3 font-display text-4xl">{project.title}</h3><p className="mt-5 max-w-lg text-base leading-7 text-white/85">{project.description}</p></div>
+          </article>
+        ))}
+      </section>
+    );
+  }
 
   return (
     <div
@@ -156,6 +172,7 @@ export default function ProjectParallaxPanels() {
                   <source media="(max-width: 767px)" srcSet={project.mobileImage || project.image} />
                   <source media="(min-width: 768px)" srcSet={project.desktopImage || project.image} />
                   <img
+                    loading="lazy"
                     src={project.desktopImage || project.mobileImage || project.image}
                     alt={project.title}
                     className="h-full w-full object-cover"

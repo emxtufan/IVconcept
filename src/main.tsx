@@ -1,12 +1,13 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
 import {loadSiteContent} from './data';
+import {applyPageMetadata, getPageMetadata} from './seo';
 import './index.css';
 
 async function bootstrap() {
-  const isAdminRoute = window.location.pathname.startsWith('/admin');
-  const isProductsRoute = window.location.pathname.startsWith('/produse');
+  const isAdminRoute = /^\/admin(?:\/|$)/.test(window.location.pathname);
+  const isProductsRoute = /^\/produse(?:\/|$)/.test(window.location.pathname);
+  applyPageMetadata(getPageMetadata(window.location.pathname));
 
   if (isAdminRoute) {
     // Keep the admin panel out of the public bundle (it is dead weight for visitors).
@@ -20,14 +21,17 @@ async function bootstrap() {
   }
 
   if (isProductsRoute) {
-    const {default: ProductCatalogPage} = await import('./components/ProductCatalogPage.tsx');
+    const [{default: ProductCatalogPage}] = await Promise.all([
+      import('./components/ProductCatalogPage.tsx'),
+      loadSiteContent(),
+    ]);
     createRoot(document.getElementById('root')!).render(
       <StrictMode><ProductCatalogPage /></StrictMode>,
     );
     return;
   }
 
-  await loadSiteContent();
+  const [{default: App}] = await Promise.all([import('./App.tsx'), loadSiteContent()]);
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
@@ -43,5 +47,5 @@ void bootstrap().catch((error) => {
   if (!root) return;
 
   root.innerHTML =
-    '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050505;color:#ffffff;font-family:sans-serif;">Failed to load site content.</div>';
+    '<div role="alert" style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;background:#e8e0d6;color:#2c2218;font-family:sans-serif;padding:24px;text-align:center;"><p>Site-ul nu poate fi încărcat momentan. Te rugăm să încerci din nou.</p><button onclick="location.reload()" style="padding:12px 24px;cursor:pointer;">Reîncearcă</button></div>';
 });

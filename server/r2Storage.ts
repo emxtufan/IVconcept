@@ -1,14 +1,16 @@
 import 'dotenv/config';
-import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client, S3ServiceException } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client, S3ServiceException } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
 import type express from 'express';
+import { isAllowedMediaType, mediaSignatureMatches, type UploadTicket } from './uploadSecurity.js';
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID?.trim() ?? '';
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID?.trim() ?? '';
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY?.trim() ?? '';
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME?.trim() ?? '';
+const R2_PRIVATE_BUCKET_NAME = process.env.R2_PRIVATE_BUCKET_NAME?.trim() ?? '';
 const R2_ENDPOINT = process.env.R2_ENDPOINT?.trim() || (R2_ACCOUNT_ID ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : '');
 const R2_PUBLIC_BASE_URL = (process.env.R2_PUBLIC_BASE_URL?.trim() ?? '').replace(/\/+$/g, '');
 const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable';
@@ -38,6 +40,9 @@ const hasR2Config = REQUIRED_R2_ENV_NAMES.every((name) => {
 const r2Client = hasR2Config
   ? new S3Client({
       region: 'auto',
+      // Browser uploads provide the body later. The default checksum middleware
+      // otherwise signs the CRC32 of an empty body and rejects every real file.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
       endpoint: R2_ENDPOINT,
       credentials: {
         accessKeyId: R2_ACCESS_KEY_ID,
@@ -75,29 +80,61 @@ export async function createR2SignedUploadUrl({
   contentType,
   expiresInSeconds = 60 * 10,
   cacheControl = IMMUTABLE_CACHE_CONTROL,
+  contentLength,
+  privateAsset = false,
 }: {
   objectKey: string;
   contentType: string;
   expiresInSeconds?: number;
   cacheControl?: string;
+  contentLength: number;
+  privateAsset?: boolean;
 }) {
   const client = requireR2Client();
 
   const command = new PutObjectCommand({
-    Bucket: R2_BUCKET_NAME,
+    Bucket: privateAsset ? requirePrivateBucket() : R2_BUCKET_NAME,
     Key: stripLeadingSlashes(objectKey),
     ContentType: contentType,
+    ContentLength: contentLength,
     CacheControl: cacheControl,
   });
 
   const uploadUrl = await getSignedUrl(client, command, {
     expiresIn: expiresInSeconds,
+    signableHeaders: new Set(['content-length', 'content-type', 'cache-control']),
   });
 
   return {
     uploadUrl,
     cacheControl,
   };
+}
+
+export function isPrivateR2Configured() {
+  return isR2Configured() && Boolean(R2_PRIVATE_BUCKET_NAME) && R2_PRIVATE_BUCKET_NAME !== R2_BUCKET_NAME;
+}
+
+function requirePrivateBucket() {
+  if (!isPrivateR2Configured()) throw new Error('Configure R2_PRIVATE_BUCKET_NAME as a separate R2 bucket with public access disabled before uploading inquiry photographs.');
+  return R2_PRIVATE_BUCKET_NAME;
+}
+
+export async function verifyR2UploadedObject(ticket: UploadTicket) {
+  const client = requireR2Client();
+  const bucket = ticket.purpose === 'inquiry' ? requirePrivateBucket() : R2_BUCKET_NAME;
+  const metadata = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: ticket.objectKey }));
+  if (metadata.ContentLength !== ticket.size || metadata.ContentType !== ticket.mimeType) {
+    throw new Error('Uploaded file size or type does not match the authorized upload.');
+  }
+  const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: ticket.objectKey, Range: 'bytes=0-63' }));
+  const bytes = await result.Body?.transformToByteArray();
+  if (!bytes || !mediaSignatureMatches(bytes, ticket.mimeType)) throw new Error('Uploaded file is not a supported image or video.');
+}
+
+export async function deletePrivateR2Object(objectKey: string) {
+  if (!objectKey.startsWith('inquiries/')) throw new Error('Invalid private object key.');
+  await requireR2Client().send(new DeleteObjectCommand({ Bucket: requirePrivateBucket(), Key: objectKey }));
 }
 
 export function buildPublicAssetUrl(objectKey: string) {
@@ -214,6 +251,21 @@ export async function copyR2Object(sourceKey: string, destinationKey: string) {
   }));
 }
 
+export async function copyLegacyInquiryObjectToPrivate(sourceKey: string, destinationKey: string) {
+  if (!sourceKey.startsWith('uploads/inquiries/') || !destinationKey.startsWith('inquiries/')) throw new Error('Invalid legacy inquiry migration key.');
+  const client = requireR2Client();
+  const metadata = await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET_NAME, Key: sourceKey }));
+  if (!metadata.ContentType || !isAllowedMediaType(metadata.ContentType, true) || !metadata.ContentLength) {
+    throw new Error('Legacy attachment must be a supported raster image before migration.');
+  }
+  await client.send(new CopyObjectCommand({
+    Bucket: requirePrivateBucket(), Key: destinationKey, CopySource: buildCopySource(sourceKey),
+    MetadataDirective: 'REPLACE', ContentType: metadata.ContentType, CacheControl: 'private, no-store',
+  }));
+  await verifyR2UploadedObject({ objectKey: destinationKey, mimeType: metadata.ContentType, size: metadata.ContentLength,
+    purpose: 'inquiry', expiresAt: Date.now() + 60000 });
+}
+
 export async function deleteR2Object(objectKey: string) {
   const client = requireR2Client();
 
@@ -231,24 +283,32 @@ export async function deleteR2Object(objectKey: string) {
   }
 }
 
-export async function proxyR2ObjectToResponse(objectKey: string, response: express.Response) {
+export async function proxyR2ObjectToResponse(objectKey: string, response: express.Response, privateAsset = false) {
   const client = requireR2Client();
 
   try {
     const result = await client.send(new GetObjectCommand({
-      Bucket: R2_BUCKET_NAME,
+      Bucket: privateAsset ? requirePrivateBucket() : R2_BUCKET_NAME,
       Key: stripLeadingSlashes(objectKey),
     }));
 
-    if (result.ContentType) {
-      response.setHeader('Content-Type', result.ContentType);
+    if (!result.ContentType || !isAllowedMediaType(result.ContentType, privateAsset)) {
+      if (result.Body instanceof Readable) result.Body.destroy();
+      response.status(415).json({ message: 'Unsupported media type.' });
+      return;
     }
+    response.setHeader('Content-Type', result.ContentType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+    response.setHeader('Content-Disposition', 'inline');
 
     if (typeof result.ContentLength === 'number') {
       response.setHeader('Content-Length', String(result.ContentLength));
     }
 
-    if (result.CacheControl) {
+    if (privateAsset) {
+      response.setHeader('Cache-Control', 'private, no-store');
+    } else if (result.CacheControl) {
       response.setHeader('Cache-Control', result.CacheControl);
     }
 

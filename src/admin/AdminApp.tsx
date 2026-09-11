@@ -4,6 +4,7 @@ import { normalizeSiteContent, type CollageImage, type ImageSectionContent, type
 import GalleriesPanel from './GalleriesPanel';
 import ProductsPanel from './ProductsPanel';
 import { uploadFilesWithProgress } from './uploadClient';
+import { DraftSaveController } from './draftSave';
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 type PathSegment = string | number;
@@ -757,6 +758,8 @@ function ArrayFieldEditor({
       ? createDefaultSliderPanelItem(value)
       : pathStr === 'cardsSection.projects'
       ? createDefaultProjectItem(value)
+      : pathStr === 'footer.socialLinks'
+      ? { label: '', url: '' }
       : value.length > 0
       ? createEmptyFromExample(value[0], value)
       : '';
@@ -1355,7 +1358,7 @@ function MediaFieldEditor({
       const uploadedFile = response.files[0];
 
       if (!uploadedFile) {
-        throw new Error('The upload did not return a file.');
+        throw new Error('Fișierul nu a putut fi încărcat.');
       }
 
       onChange(path, uploadedFile.url);
@@ -1363,7 +1366,7 @@ function MediaFieldEditor({
     } catch (error) {
       console.error(error);
       setUploadState('error');
-      setUploadError(error instanceof Error ? error.message : 'Upload failed.');
+      setUploadError(error instanceof Error ? error.message : 'Încărcarea nu a reușit.');
     }
   };
 
@@ -1406,18 +1409,19 @@ function MediaFieldEditor({
             )
           ) : (
             <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#2c2218]/38">
-              No {mediaKind} selected
+              {mediaKind === 'video' ? 'Nu ai ales un videoclip.' : 'Nu ai ales o imagine.'}
             </div>
           )}
 
           <div className="absolute left-3 top-3 rounded-full border border-[#2c2218]/10 bg-[#f8f0e7]/82 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-[#2c2218]/72 backdrop-blur-md">
-            {mediaKind}
+            {mediaKind === 'video' ? 'Video' : 'Imagine'}
           </div>
         </div>
 
         <div className="space-y-3 p-4">
           <input
             value={value}
+            aria-label={`Adresa fișierului: ${label}`}
             onChange={(event) => onChange(path, event.target.value)}
             placeholder={mediaKind === 'video' ? '/uploads/clip.mp4' : '/uploads/image.jpg'}
             className={ADMIN_INPUT_CLASS}
@@ -1429,7 +1433,7 @@ function MediaFieldEditor({
               onClick={() => setUploadOpen(true)}
               className={ADMIN_PRIMARY_BUTTON_CLASS}
             >
-              Upload {mediaKind}
+              {mediaKind === 'video' ? 'Încarcă videoclip' : 'Încarcă imagine'}
             </button>
             {previewSrc && (
               <a
@@ -1438,7 +1442,7 @@ function MediaFieldEditor({
                 rel="noreferrer"
                 className={ADMIN_SECONDARY_BUTTON_CLASS}
               >
-                Preview
+                Previzualizează
               </a>
             )}
           </div>
@@ -1447,27 +1451,27 @@ function MediaFieldEditor({
 
       <AdminModal
         open={uploadOpen}
-        title={`Upload ${mediaKind}`}
-        description={`Choose a ${mediaKind} file and upload it to Cloudflare R2. The field will be updated automatically with the new asset URL.`}
+        title={mediaKind === 'video' ? 'Încarcă videoclip' : 'Încarcă imagine'}
+        description="Alege un fișier de pe calculator. După încărcare, salvează modificările pentru a-l publica pe site."
         onClose={closeModal}
       >
         <div className="space-y-5">
-          <div
-            className="rounded-[28px] border border-dashed border-[#2c2218]/14 bg-[#f8f2ea] px-5 py-8 text-center"
-            onClick={() => fileInputRef.current?.click()}
+          <label
+            className="block cursor-pointer rounded-[28px] border border-dashed border-[#2c2218]/14 bg-[#f8f2ea] px-5 py-8 text-center focus-within:ring-2 focus-within:ring-[#b38b60]"
           >
             <input
               ref={fileInputRef}
               type="file"
               accept={accept}
-              className="hidden"
+              disabled={uploadState === 'uploading'}
+              className="sr-only"
               onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
             />
-            <p className="text-sm font-medium text-[#2c2218]">Choose {mediaKind}</p>
-            <p className="mt-2 text-sm text-[#2c2218]/46">
-              Click here to select a local {mediaKind} file from your computer.
-            </p>
-          </div>
+            <span className="block text-sm font-medium text-[#2c2218]">{mediaKind === 'video' ? 'Alege videoclipul' : 'Alege imaginea'}</span>
+            <span className="mt-2 block text-sm text-[#2c2218]/46">
+              Apasă aici pentru a selecta fișierul de pe calculator.
+            </span>
+          </label>
 
           {selectedFile && (
             <div className="space-y-4 rounded-[24px] border border-[#2c2218]/10 bg-[#fbf6f0] p-4">
@@ -1511,7 +1515,7 @@ function MediaFieldEditor({
           {uploadState === 'uploading' && (
             <div className="rounded-[24px] border border-[#b38b60]/20 bg-[#f3e7d8] p-4">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-sm font-medium text-[#2c2218]">Uploading...</p>
+                <p className="text-sm font-medium text-[#2c2218]">Se încarcă…</p>
                 <p className="text-sm text-[#8c6a49]">{uploadProgress}%</p>
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#2c2218]/10">
@@ -1536,7 +1540,7 @@ function MediaFieldEditor({
               disabled={uploadState === 'uploading'}
               className={ADMIN_SECONDARY_BUTTON_CLASS}
             >
-              Cancel
+              Anulează
             </button>
             <button
               type="button"
@@ -1544,7 +1548,7 @@ function MediaFieldEditor({
               disabled={!selectedFile || uploadState === 'uploading'}
               className={ADMIN_PRIMARY_BUTTON_CLASS}
             >
-              {uploadState === 'uploading' ? 'Uploading...' : 'Upload Now'}
+              {uploadState === 'uploading' ? 'Se încarcă…' : 'Încarcă fișierul'}
             </button>
           </div>
         </div>
@@ -2237,6 +2241,7 @@ const SECTION_ORDER: AdminSectionKey[] = [
   'textSection',
   'slidersSection',
   'videoCardSection',
+  'courseOffer',
   'reviews',
   'footer',
   'galleries',
@@ -2302,10 +2307,15 @@ const ADMIN_SECTION_META: Record<AdminSectionKey, AdminSectionMeta> = {
     usage: 'Pagina /galerie-foto',
     description: 'Administrezi galeriile separate pentru pagina dedicata de galerie foto.',
   },
+  courseOffer: {
+    label: 'Oferta cursului',
+    usage: 'Fereastra de înscriere la curs',
+    description: 'Editezi imaginea, oferta și mesajele afișate în fereastra de înscriere la curs.',
+  },
   products: {
     label: 'Categorii & Produse',
     usage: 'Pagina /produse',
-    description: 'Creezi categorii și adaugi produse cu titlu, descriere, imagini, preț și dimensiune.',
+    description: 'Creezi și editezi categorii și produse, inclusiv imaginile, prețul și dimensiunile.',
     readOnly: true,
   },
   subscribers: {
@@ -2358,6 +2368,7 @@ interface CourseSubscriberRecord {
   gdprAccepted: boolean;
   gdprAcceptedAt: string;
   createdAt: string;
+  source?: string;
 }
 
 function formatInquiryName(inquiry: InquiryRecord) {
@@ -2653,6 +2664,7 @@ function CourseSubscribersPanel() {
 
   useEffect(() => {
     let cancelled = false;
+    setError('');
     fetch('/api/course-subscribers')
       .then(async (response) => {
         if (!response.ok) throw new Error(`Failed: ${response.status}`);
@@ -2697,8 +2709,9 @@ function CourseSubscribersPanel() {
           <article key={subscriber.id} className="rounded-2xl border border-[#2c2218]/10 bg-[#fbf6f0] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold">{subscriber.firstName} {subscriber.lastName}</h3>
+                <h3 className="text-lg font-semibold">{[subscriber.firstName, subscriber.lastName].filter(Boolean).join(' ') || subscriber.email}</h3>
                 <p className="mt-1 text-xs text-[#2c2218]/40">{formatInquiryDate(subscriber.createdAt)}</p>
+                {subscriber.source === 'course-offer' && <p className="mt-1 text-xs text-[#2c2218]/55">Înscriere prin oferta cursului</p>}
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-green-800/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-green-800">GDPR acceptat</span>
@@ -2709,7 +2722,7 @@ function CourseSubscribersPanel() {
             </div>
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t border-[#2c2218]/10 pt-4 text-sm">
               <a href={`mailto:${subscriber.email}`} className="text-[#9b744e]">{subscriber.email}</a>
-              <a href={`tel:${subscriber.phone.replace(/\s/g, '')}`}>{subscriber.phone}</a>
+              {subscriber.phone && <a href={`tel:${subscriber.phone.replace(/\s/g, '')}`}>{subscriber.phone}</a>}
               <span className="text-xs text-[#2c2218]/45">Acord: {formatInquiryDate(subscriber.gdprAcceptedAt)}</span>
             </div>
           </article>
@@ -2730,6 +2743,7 @@ export default function AdminApp() {
   const [authMessage, setAuthMessage] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const saveController = useRef(new DraftSaveController());
 
   const isDirty = useMemo(() => {
     if (!content || !draft) {
@@ -2844,6 +2858,7 @@ export default function AdminApp() {
       }
 
       setPassword('');
+      saveController.current.invalidate();
       setContent(null);
       setDraft(null);
       setMessage('');
@@ -2861,6 +2876,7 @@ export default function AdminApp() {
   };
 
   const handleLogout = async () => {
+    saveController.current.invalidate();
     try {
       await fetch('/api/admin/logout', {
         method: 'POST',
@@ -2882,23 +2898,38 @@ export default function AdminApp() {
   };
 
   const handleChange = (path: PathSegment[], nextValue: JsonValue) => {
+    saveController.current.markChanged();
     setDraft((current) => {
       if (!current) return current;
-      return setAtPath(current, path, nextValue);
+      let next = setAtPath(current, path, nextValue);
+      if (path.length === 4 && path[0] === 'reviews' && path[1] === 'items' &&
+          typeof path[2] === 'number' && ['mediaUrl', 'poster', 'mediaType'].includes(String(path[3]))) {
+        const review = next.reviews.items[path[2]];
+        if (review) {
+          const thumbnail = review.mediaType === 'video' ? review.poster ?? '' : review.mediaUrl;
+          next = setAtPath(next, ['reviews', 'items', path[2], 'thumbnail'], thumbnail);
+          if (review.mediaType === 'video' && review.poster === undefined) {
+            next = setAtPath(next, ['reviews', 'items', path[2], 'poster'], '');
+          }
+        }
+      }
+      return next;
     });
-    setSaveState('idle');
+    if (!saveController.current.isSaving) setSaveState('idle');
     setMessage('');
   };
 
   const handleAdd = (path: PathSegment[], template: JsonValue) => {
+    saveController.current.markChanged();
     setDraft((current) => {
       if (!current) return current;
       return addAtPath(current, path, template);
     });
-    setSaveState('idle');
+    if (!saveController.current.isSaving) setSaveState('idle');
   };
 
   const handleDuplicate = (path: PathSegment[], template: JsonValue) => {
+    saveController.current.markChanged();
     setDraft((current) => {
       if (!current) return current;
       const currentArray = getAtPath(current as unknown as JsonValue, path);
@@ -2913,52 +2944,56 @@ export default function AdminApp() {
           : deepClone(template);
       return duplicateAtPath(current, path, payload);
     });
-    setSaveState('idle');
+    if (!saveController.current.isSaving) setSaveState('idle');
   };
 
   const handleRemove = (path: PathSegment[]) => {
+    saveController.current.markChanged();
     setDraft((current) => {
       if (!current) return current;
       return removeAtPath(current, path);
     });
-    setSaveState('idle');
+    if (!saveController.current.isSaving) setSaveState('idle');
   };
 
   const handleReset = () => {
-    if (!content) return;
+    if (!content || saveController.current.isSaving) return;
+    saveController.current.markChanged();
     setDraft(deepClone(content));
     setSaveState('idle');
     setMessage('');
   };
 
   const handleSave = async () => {
-    if (!draft) return;
+    if (!draft || saveController.current.isSaving) return;
 
     try {
       setSaveState('saving');
       setMessage('');
 
-      const response = await fetch('/api/site-content', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(draft),
+      await saveController.current.save(draft, async (snapshot) => {
+        const response = await fetch('/api/site-content', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(snapshot),
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({})) as { message?: string };
+          throw new Error(payload.message || 'Nu am putut salva modificările. Încearcă din nou.');
+        }
+        return normalizeSiteContent((await response.json()) as SiteContent);
+      }, (nextContent, hasNewerEdits) => {
+        setContent(nextContent);
+        if (!hasNewerEdits) setDraft(deepClone(nextContent));
+        setSaveState(hasNewerEdits ? 'idle' : 'saved');
+        setMessage(hasNewerEdits
+          ? 'Modificările trimise au fost salvate. Mai ai modificări noi de salvat.'
+          : 'Modificările au fost salvate.');
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save content: ${response.status}`);
-      }
-
-      const nextContent = normalizeSiteContent((await response.json()) as SiteContent);
-      setContent(nextContent);
-      setDraft(deepClone(nextContent));
-      setSaveState('saved');
-      setMessage('Changes saved to the database.');
     } catch (error) {
       console.error(error);
       setSaveState('error');
-      setMessage('Could not save changes. Please try again.');
+      setMessage(error instanceof Error ? error.message : 'Nu am putut salva modificările. Încearcă din nou.');
     }
   };
 
@@ -3152,7 +3187,7 @@ export default function AdminApp() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  disabled={!isDirty}
+                  disabled={!isDirty || saveState === 'saving'}
                   className={ADMIN_SECONDARY_BUTTON_CLASS}
                 >
                   Reset
@@ -3200,6 +3235,26 @@ export default function AdminApp() {
                 <GalleriesPanel />
               ) : activeSection === 'products' ? (
                 <ProductsPanel />
+              ) : activeSection === 'courseOffer' ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-5">
+                    <label className="flex items-center justify-between gap-3 rounded-2xl border border-[#2c2218]/12 bg-[#fbf6f0] px-4 py-3">
+                      <span className="text-sm">Afișează oferta cursului</span>
+                      <input type="checkbox" checked={draft.courseOffer.enabled} onChange={(event) => handleChange(['courseOffer', 'enabled'], event.target.checked)} className="h-4 w-4 accent-[#c5a880]" />
+                    </label>
+                    {(['title', 'description', 'buttonText', 'successMessage'] as const).map((key) => (
+                      <label key={key} className="block space-y-2">
+                        <span className={ADMIN_LABEL_CLASS}>{{ title: 'Titlul ofertei', description: 'Descrierea cursului', buttonText: 'Textul butonului', successMessage: 'Mesaj după înscriere' }[key]}</span>
+                        {key === 'description' || key === 'successMessage' ? (
+                          <textarea value={draft.courseOffer[key]} onChange={(event) => handleChange(['courseOffer', key], event.target.value)} rows={4} className={ADMIN_TEXTAREA_CLASS} />
+                        ) : (
+                          <input value={draft.courseOffer[key]} onChange={(event) => handleChange(['courseOffer', key], event.target.value)} className={ADMIN_INPUT_CLASS} />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                  <MediaFieldEditor label="Imagine curs" value={draft.courseOffer.imageUrl} path={['courseOffer', 'imageUrl']} onChange={handleChange} mediaKind="image" />
+                </div>
               ) : activeSection === 'imageSection' ? (
                 <ImageSectionEditor
                   value={draft.imageSection}

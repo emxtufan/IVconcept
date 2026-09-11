@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useAccessibleDialog } from './useAccessibleDialog';
 import { AnimatePresence, motion } from 'motion/react';
 import { getSiteContent, SERVICES } from '../data';
 
@@ -22,22 +22,15 @@ const MENU_LINKS = [
 export default function MenuDrawer({ isOpen, onClose }: MenuDrawerProps) {
   const footerContent = getSiteContent().footer;
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  const dialogRef = useAccessibleDialog(isOpen, onClose);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
           <motion.div
+            data-dialog-backdrop
+            aria-hidden="true"
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.7 }}
             exit={{ opacity: 0 }}
@@ -51,6 +44,10 @@ export default function MenuDrawer({ isOpen, onClose }: MenuDrawerProps) {
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 26, stiffness: 200 }}
             className="fixed bottom-0 left-0 top-0 z-[160] flex w-full max-w-sm flex-col justify-between overflow-y-auto border-r border-white/10 bg-[#130a01] p-8"
+            ref={dialogRef}
+            id="site-menu"
+            tabIndex={-1}
+            data-lenis-prevent
             role="dialog"
             aria-modal="true"
             aria-label="Meniu"
@@ -120,8 +117,8 @@ export default function MenuDrawer({ isOpen, onClose }: MenuDrawerProps) {
               </ul>
 
               <div className="space-y-0.5 border-t border-white/10 pt-5 text-xs text-white/55">
-                <p>{footerContent.email}</p>
-                <p>{footerContent.phone}</p>
+                <a href={`mailto:${footerContent.email}`} className="block select-text">{footerContent.email}</a>
+                <a href={`tel:${footerContent.phone.replace(/[^+0-9]/g, '')}`} className="block select-text">{footerContent.phone}</a>
               </div>
 
               <div className="mt-5 font-mono text-[10px] text-white/35">

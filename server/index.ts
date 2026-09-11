@@ -1,5 +1,5 @@
 import express from 'express';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { existsSync, mkdirSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import multer from 'multer';
 import sharp from 'sharp';
+import servePage from '../api/page.js';
 import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent.js';
 import { getGalleryFolderPath, slugifyGalleryName, type GalleryRecord } from '../src/types/galleries.js';
 import { slugifyProductCategory } from '../src/types/products.js';
@@ -17,13 +18,16 @@ import {
   copyR2Object,
   createR2SignedUploadUrl,
   deleteR2Object,
+  deletePrivateR2Object,
   extractManagedObjectKeyFromUrl,
   getR2ConfigurationErrorMessage,
   isR2Configured,
+  isPrivateR2Configured,
   joinObjectKey,
   proxyR2ObjectToResponse,
   uploadBufferToR2,
   uploadFileToR2,
+  verifyR2UploadedObject,
 } from './r2Storage.js';
 import {
   createGallery,
@@ -44,6 +48,12 @@ import {
   getGalleryById,
   getGalleryBySlug,
   getGalleryItemById,
+  getInquiryById,
+  hasInquiryAttachment,
+  registerPendingInquiryUploads,
+  listExpiredInquiryUploads,
+  removePendingInquiryUpload,
+  isMediaAssetReferenced,
   getMainSiteContent,
   listGalleries,
   listCourseSubscribers,
@@ -54,6 +64,7 @@ import {
   saveMainSiteContent,
   updateGallery,
   updateGalleryItemUrl,
+  renameGalleryWithItems,
   updateProduct,
   updateProductCategory,
 } from './supabaseStore.js';
@@ -63,6 +74,12 @@ import {
   hasSupabaseAdminAccess,
   isSupabaseConfigured,
 } from './supabase.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
+import { renameGallerySafely } from './galleryRename.js';
+import {
+  MAX_INQUIRY_IMAGE_BYTES, MAX_MEDIA_BYTES, inquiryAttachmentUrl, inquiryObjectKeyFromUrl,
+  isAllowedMediaType, signUploadTicket, verifyUploadTicket, type UploadPurpose, type UploadTicket,
+} from './uploadSecurity.js';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -78,8 +95,31 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim() ?? '';
 const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET?.trim() || ADMIN_PASSWORD;
 mkdirSync(tempUploadsPath, { recursive: true });
 
+const proxyHops = process.env.VERCEL === '1' ? 1 : Number(process.env.TRUST_PROXY_HOPS ?? 0);
+if (Number.isInteger(proxyHops) && proxyHops > 0 && proxyHops <= 8) app.set('trust proxy', proxyHops);
+app.disable('x-powered-by');
+app.use((_request, response, next) => { response.setHeader('X-Content-Type-Options', 'nosniff'); next(); });
 app.use(express.json({ limit: '2mb' }));
-app.use('/uploads', express.static(uploadsPath));
+app.use('/uploads', (request, response, next) => {
+  let pathname: string;
+  try { pathname = path.posix.normalize(decodeURIComponent(request.path).replaceAll('\\', '/')).toLowerCase(); }
+  catch { response.status(400).end(); return; }
+  if (pathname === '/inquiries' || pathname.startsWith('/inquiries/') || /\.(svg|svgz|html?|xml|js)$/i.test(pathname)) {
+    response.status(404).json({ message: 'File not found.' });
+    return;
+  }
+  response.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+  next();
+}, express.static(uploadsPath, { setHeaders(response) {
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  response.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+} }));
+
+const loginRateLimit = createRateLimitMiddleware('admin-login', { limit: 10, windowSeconds: 900, globalLimit: 1000 });
+const formRateLimit = createRateLimitMiddleware('public-form', { limit: 10, windowSeconds: 900, globalLimit: 1000 });
+const uploadRateLimit = createRateLimitMiddleware('inquiry-upload', { limit: 15, windowSeconds: 900, globalLimit: 500 });
+const uploadDailyRateLimit = createRateLimitMiddleware('inquiry-upload-daily', { limit: 12, windowSeconds: 86400, globalLimit: 200 });
+const finalizeRateLimit = createRateLimitMiddleware('inquiry-finalize', { limit: 30, windowSeconds: 900, globalLimit: 1000 });
 
 const storage = multer.diskStorage({
   destination: (_request, _file, callback) => {
@@ -97,8 +137,8 @@ const upload = multer({
     files: 24,
   },
   fileFilter: (_request, file, callback) => {
-    if (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/')) {
-      callback(new Error('Only image and video files are allowed.'));
+    if (!isAllowedMediaType(file.mimetype)) {
+      callback(new Error('Only supported raster image and video files are allowed.'));
       return;
     }
 
@@ -138,7 +178,7 @@ function parseCookies(cookieHeader?: string) {
       return;
     }
 
-    cookies[key] = decodeURIComponent(value);
+    try { cookies[key] = decodeURIComponent(value); } catch { /* Ignore malformed cookies. */ }
   });
 
   return cookies;
@@ -258,6 +298,13 @@ function ensureR2StorageConfigured(response: express.Response) {
   return false;
 }
 
+function ensurePrivateR2StorageConfigured(response: express.Response) {
+  if (isPrivateR2Configured()) return true;
+  console.error('Configure R2_PRIVATE_BUCKET_NAME as a separate R2 bucket with public access disabled.');
+  response.status(503).json({ message: 'Încărcarea fotografiilor este temporar indisponibilă. Poți trimite cererea fără fotografii sau poți încerca mai târziu.' });
+  return false;
+}
+
 function ensureSupabaseConfigured(response: express.Response) {
   if (isSupabaseConfigured()) {
     return true;
@@ -345,7 +392,7 @@ function createUploadFilename(originalName: string) {
     .replace(/^-+|-+$/g, '')
     .slice(0, 48) || 'image';
 
-  return `${baseName}-${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
+  return `${baseName}-${randomUUID()}${extension}`;
 }
 
 interface UploadedMediaAssetPayload {
@@ -356,6 +403,7 @@ interface UploadedMediaAssetPayload {
   mimeType: string;
   width: number | null;
   height: number | null;
+  uploadToken?: string;
 }
 
 function isUploadedMediaAssetPayload(value: unknown): value is UploadedMediaAssetPayload {
@@ -412,14 +460,23 @@ async function createPresignedUploadAssets(objectKeyBuilder: (filename: string) 
   originalName: string;
   mimeType: string;
   size: number;
-}>) {
-  return Promise.all(
+}>, purpose: UploadPurpose = 'media', galleryId?: number) {
+  const maxFiles = purpose === 'inquiry' ? 5 : purpose === 'gallery' ? 48 : 24;
+  if (!ADMIN_SESSION_SECRET) throw new Error('Upload signing is not configured.');
+  if (files.length > maxFiles || files.some((file) => !isAllowedMediaType(file.mimeType, purpose !== 'media') ||
+    !Number.isSafeInteger(file.size) || file.size <= 0 || file.size > (purpose === 'inquiry' ? MAX_INQUIRY_IMAGE_BYTES : MAX_MEDIA_BYTES))) {
+    throw new Error('Invalid upload size, count, or media type. SVG files are not accepted.');
+  }
+  const assets = await Promise.all(
     files.map(async (file) => {
       const filename = createUploadFilename(file.originalName);
       const objectKey = objectKeyBuilder(filename);
       const { uploadUrl, cacheControl } = await createR2SignedUploadUrl({
         objectKey,
         contentType: file.mimeType,
+        contentLength: file.size,
+        privateAsset: purpose === 'inquiry',
+        ...(purpose === 'inquiry' ? { cacheControl: 'private, no-store' } : {}),
       });
 
       return {
@@ -429,17 +486,48 @@ async function createPresignedUploadAssets(objectKeyBuilder: (filename: string) 
           'Cache-Control': cacheControl,
         },
         asset: {
-          url: buildPublicAssetUrl(objectKey),
+          url: purpose === 'inquiry' ? inquiryAttachmentUrl(objectKey) : buildPublicAssetUrl(objectKey),
           filename,
           originalName: file.originalName,
           size: file.size,
           mimeType: file.mimeType,
           width: null,
           height: null,
+          uploadToken: signUploadTicket({ objectKey, mimeType: file.mimeType, size: file.size, purpose, galleryId,
+            expiresAt: Date.now() + 60 * 60 * 1000 }, ADMIN_SESSION_SECRET),
         },
       };
     }),
   );
+  if (purpose === 'inquiry') {
+    await registerPendingInquiryUploads(assets.map((entry) => verifyUploadTicket(entry.asset.uploadToken, ADMIN_SESSION_SECRET).objectKey));
+  }
+  return assets;
+}
+
+async function validateUploadedAssets(files: UploadedMediaAssetPayload[], purpose: UploadPurpose, gallery?: { id: number; slug: string }) {
+  const maxFiles = purpose === 'inquiry' ? 5 : purpose === 'gallery' ? 48 : 24;
+  if (files.length < 1 || files.length > maxFiles) throw new Error('Invalid uploaded file count.');
+  const tokens = new Set<string>();
+  return Promise.all(files.map(async (file) => {
+    const ticket = verifyUploadTicket(file.uploadToken, ADMIN_SESSION_SECRET);
+    if (ticket.purpose !== purpose || (gallery && (ticket.galleryId !== gallery.id ||
+      !ticket.objectKey.startsWith(`uploads/galleries/${gallery.slug}/`)))) throw new Error('Upload does not belong to this destination.');
+    if (tokens.has(ticket.objectKey)) throw new Error('Duplicate uploaded file.');
+    tokens.add(ticket.objectKey);
+    await verifyR2UploadedObject(ticket);
+    return {
+      ...file,
+      url: purpose === 'inquiry' ? inquiryAttachmentUrl(ticket.objectKey) : buildPublicAssetUrl(ticket.objectKey),
+      filename: path.posix.basename(ticket.objectKey),
+      size: ticket.size,
+      mimeType: ticket.mimeType,
+    };
+  }));
+}
+
+async function deleteUnreferencedMediaObject(objectKey: string) {
+  if (!await isMediaAssetReferenced([buildPublicAssetUrl(objectKey), `/${objectKey}`])) await deleteR2Object(objectKey);
 }
 
 async function normalizeUploadedFile(file: {
@@ -640,7 +728,7 @@ app.get('/api/admin/session', (request, response) => {
   });
 });
 
-app.post('/api/admin/login', (request, response) => {
+app.post('/api/admin/login', loginRateLimit, (request, response) => {
   if (!ADMIN_PASSWORD || !ADMIN_SESSION_SECRET) {
     response.status(503).json({
       message: 'Admin authentication is not configured on the server.',
@@ -723,7 +811,11 @@ app.put('/api/site-content', requireAdminSession, async (request, response, next
 
       if (removedObjectKeys.length > 0) {
         const deleteResults = await Promise.allSettled(
-          removedObjectKeys.map((objectKey) => deleteR2Object(objectKey)),
+          removedObjectKeys.map(async (objectKey) => {
+            // A homepage image can also be used by a product or another record.
+            // Failure to prove it is unused retains the file instead of deleting it.
+            await deleteUnreferencedMediaObject(objectKey);
+          }),
         );
 
         const failedDeletes = deleteResults
@@ -759,9 +851,8 @@ function handleMediaUpload(request: express.Request, response: express.Response,
   const uploadedAssets = parseUploadedMediaAssets(request.body);
 
   if (uploadedAssets) {
-    response.json({
-      files: uploadedAssets,
-    });
+    void validateUploadedAssets(uploadedAssets, 'media')
+      .then((files) => response.json({ files })).catch(next);
     return;
   }
 
@@ -829,8 +920,8 @@ const galleryUpload = multer({
     files: 48,
   },
   fileFilter: (_request, file, callback) => {
-    if (!file.mimetype.startsWith('image/')) {
-      callback(new Error('Only image files are allowed for galleries.'));
+    if (!isAllowedMediaType(file.mimetype, true)) {
+      callback(new Error('Only supported raster image files are allowed for galleries.'));
       return;
     }
 
@@ -907,54 +998,14 @@ app.patch('/api/galleries/:id', requireAdminSession, async (request, response, n
       return;
     }
 
-    try {
-      if (slugChanged) {
-        for (const item of currentGallery.items) {
-          const sourceKey = buildGalleryObjectKey(currentGallery.slug, item.filename);
-          const destinationKey = buildGalleryObjectKey(nextSlug, item.filename);
-
-          await copyR2Object(sourceKey, destinationKey);
-        }
-      }
-
-      if (slugChanged) {
-        await Promise.all(
-          currentGallery.items.map((item) =>
-            updateGalleryItemUrl(item.id, buildPublicAssetUrl(buildGalleryObjectKey(nextSlug, item.filename))),
-          ),
-        );
-      }
-
-      await updateGallery(id, {
-        name: rawName,
-        slug: nextSlug,
-      });
-
-      const updatedGallery = await getGalleryById(id);
-
-      if (!updatedGallery) {
-        throw new Error('Updated gallery could not be reloaded from Supabase.');
-      }
-
-      if (slugChanged) {
-        await Promise.all(
-          currentGallery.items.map((item) =>
-            deleteR2Object(buildGalleryObjectKey(currentGallery.slug, item.filename)),
-          ),
-        );
-      }
-
-      response.json(mapGalleryRecord(updatedGallery));
-    } catch (error) {
-      if (slugChanged) {
-        await Promise.all(
-          currentGallery.items.map((item) =>
-            deleteR2Object(buildGalleryObjectKey(nextSlug, item.filename)).catch(() => undefined),
-          ),
-        );
-      }
-      throw error;
-    }
+    await renameGallerySafely(currentGallery, rawName, nextSlug, {
+      copy: copyR2Object, commit: renameGalleryWithItems, remove: deleteUnreferencedMediaObject,
+      objectKey: buildGalleryObjectKey, assetUrl: buildPublicAssetUrl,
+      reportCleanupFailure: (objectKeys) => console.error('Gallery rename committed; old files need cleanup:', objectKeys),
+    });
+    const updatedGallery = await getGalleryById(id);
+    if (!updatedGallery) throw new Error('Updated gallery could not be reloaded from Supabase.');
+    response.json(mapGalleryRecord(updatedGallery));
   } catch (error) {
     next(error);
   }
@@ -989,7 +1040,7 @@ app.delete('/api/galleries/:id', requireAdminSession, async (request, response, 
     if (gallery.items.length > 0) {
       await Promise.all(
         gallery.items.map((item) =>
-          deleteR2Object(buildGalleryObjectKey(gallery.slug, item.filename)),
+          deleteUnreferencedMediaObject(buildGalleryObjectKey(gallery.slug, item.filename)),
         ),
       );
     }
@@ -1031,6 +1082,8 @@ app.post('/api/galleries/:id/upload/presign', requireAdminSession, async (reques
       files: await createPresignedUploadAssets(
         (filename) => buildGalleryObjectKey(gallery.slug, filename),
         files,
+        'gallery',
+        gallery.id,
       ),
     });
   } catch (error) {
@@ -1065,11 +1118,12 @@ app.post('/api/galleries/:id/upload', requireAdminSession, async (request, respo
     const directUploadFiles = parseUploadedMediaAssets(request.body);
 
     if (directUploadFiles) {
+      const validatedFiles = await validateUploadedAssets(directUploadFiles, 'gallery', gallery);
       const startSortOrder = gallery.items.reduce((maxSortOrder, item) => Math.max(maxSortOrder, item.sortOrder), -1) + 1;
 
       await createGalleryItems(
         gallery.id,
-        directUploadFiles.map((file, index) => ({
+        validatedFiles.map((file, index) => ({
           url: file.url,
           filename: file.filename,
           originalName: file.originalName,
@@ -1079,10 +1133,11 @@ app.post('/api/galleries/:id/upload', requireAdminSession, async (request, respo
           height: file.height,
           sortOrder: startSortOrder + index,
         })),
+        gallery.slug,
       );
 
       response.status(201).json({
-        files: directUploadFiles,
+        files: validatedFiles,
       });
       return;
     }
@@ -1126,6 +1181,7 @@ app.post('/api/galleries/:id/upload', requireAdminSession, async (request, respo
               height: file.height,
               sortOrder: startSortOrder + index,
             })),
+            gallery.slug,
           );
 
           response.status(201).json({
@@ -1165,7 +1221,7 @@ app.delete('/api/galleries/items/:id', requireAdminSession, async (request, resp
 
     await deleteGalleryItem(id);
 
-    await deleteR2Object(buildGalleryObjectKey(item.gallery.slug, item.filename));
+    await deleteUnreferencedMediaObject(buildGalleryObjectKey(item.gallery.slug, item.filename));
 
     response.json({ success: true });
   } catch (error) {
@@ -1314,7 +1370,7 @@ app.delete('/api/products/:id', requireAdminSession, async (request, response, n
   }
 });
 
-app.post('/api/newsletter-subscriptions', async (request, response, next) => {
+app.post('/api/newsletter-subscriptions', formRateLimit, async (request, response, next) => {
   try {
     if (!ensureSupabaseAdminConfigured(response)) {
       return;
@@ -1394,7 +1450,7 @@ app.delete('/api/newsletter-subscriptions/:id', requireAdminSession, async (requ
   }
 });
 
-app.post('/api/course-subscribers', async (request, response, next) => {
+app.post('/api/course-subscribers', formRateLimit, async (request, response, next) => {
   try {
     if (!ensureSupabaseAdminConfigured(response)) return;
     const firstName = typeof request.body?.firstName === 'string' ? request.body.firstName.trim() : '';
@@ -1402,7 +1458,8 @@ app.post('/api/course-subscribers', async (request, response, next) => {
     const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
     const phone = typeof request.body?.phone === 'string' ? request.body.phone.trim() : '';
     const gdprAccepted = request.body?.gdprAccepted === true;
-    if (!firstName || !lastName || !email || !phone || !gdprAccepted) {
+    const source = request.body?.source === 'course-offer' ? 'course-offer' : 'registration';
+    if (!email || !gdprAccepted || (source !== 'course-offer' && (!firstName || !lastName || !phone))) {
       response.status(400).json({ message: 'Completează toate câmpurile și acceptă acordul GDPR.' });
       return;
     }
@@ -1414,11 +1471,11 @@ app.post('/api/course-subscribers', async (request, response, next) => {
       response.status(400).json({ message: 'Adresa de email nu este validă.' });
       return;
     }
-    if (!/^[+0-9\s\-()]{7,30}$/.test(phone)) {
+    if ((source !== 'course-offer' || phone) && !/^[+0-9\s\-()]{7,30}$/.test(phone)) {
       response.status(400).json({ message: 'Numărul de telefon nu este valid.' });
       return;
     }
-    await createCourseSubscriber({ firstName, lastName, email, phone });
+    await createCourseSubscriber({ firstName, lastName, email, phone, source });
     response.status(201).json({ success: true, message: 'Înscrierea a fost înregistrată.' });
   } catch (error) {
     next(error);
@@ -1463,22 +1520,30 @@ app.get('/api/inquiries', requireAdminSession, async (_request, response, next) 
   }
 });
 
-app.post('/api/inquiries/uploads/presign', async (request, response, next) => {
+app.post('/api/inquiries/uploads/presign', uploadRateLimit, uploadDailyRateLimit, async (request, response, next) => {
   try {
-    if (!ensureR2StorageConfigured(response)) return;
+    if (!ensurePrivateR2StorageConfigured(response)) return;
+    // Reclaim expired uploads before issuing more storage. Failed deletes keep their
+    // tracking row and are retried on the next upload request.
+    const expiredKeys = await listExpiredInquiryUploads();
+    await Promise.all(expiredKeys.map(async (key) => {
+      await deletePrivateR2Object(key);
+      await removePendingInquiryUpload(key);
+    }));
     const files = parsePresignFilesPayload(request.body);
     if (!files || files.length < 1 || files.length > 5) {
       response.status(400).json({ message: 'Poți încărca între 1 și 5 fotografii.' });
       return;
     }
-    if (files.some((file) => !file.mimeType.startsWith('image/') || file.size <= 0 || file.size > 15 * 1024 * 1024)) {
-      response.status(400).json({ message: 'Sunt acceptate doar imagini de maximum 15 MB fiecare.' });
+    if (files.some((file) => !isAllowedMediaType(file.mimeType, true) || !Number.isSafeInteger(file.size) || file.size <= 0 || file.size > MAX_INQUIRY_IMAGE_BYTES)) {
+      response.status(400).json({ message: 'Sunt acceptate doar imagini JPEG, PNG, WebP, GIF sau AVIF de maximum 15 MB fiecare.' });
       return;
     }
     response.json({
       files: await createPresignedUploadAssets(
-        (filename) => joinObjectKey('uploads', 'inquiries', filename),
+        (filename) => joinObjectKey('inquiries', filename),
         files,
+        'inquiry',
       ),
     });
   } catch (error) {
@@ -1486,24 +1551,41 @@ app.post('/api/inquiries/uploads/presign', async (request, response, next) => {
   }
 });
 
-app.post('/api/inquiries/uploads', async (request, response) => {
-  const files = parseUploadedMediaAssets(request.body);
-  if (!files || files.length < 1 || files.length > 5 || files.some((file) => !file.mimeType.startsWith('image/'))) {
-    response.status(400).json({ message: 'Datele fotografiilor încărcate sunt invalide.' });
-    return;
+app.post('/api/inquiries/uploads', finalizeRateLimit, async (request, response, next) => {
+  try {
+    if (!ensurePrivateR2StorageConfigured(response)) return;
+    const files = parseUploadedMediaAssets(request.body);
+    if (!files || files.length < 1 || files.length > 5) {
+      response.status(400).json({ message: 'Datele fotografiilor încărcate sunt invalide.' });
+      return;
+    }
+    response.json({ files: await validateUploadedAssets(files, 'inquiry') });
+  } catch (error) {
+    next(error);
   }
-  response.json({ files });
+});
+
+app.get('/api/inquiries/attachments/:attachment', requireAdminSession, async (request, response, next) => {
+  try {
+    const objectKey = inquiryObjectKeyFromUrl(`/api/inquiries/attachments/${request.params.attachment}`);
+    if (!objectKey || !await hasInquiryAttachment(objectKey)) {
+      response.status(404).json({ message: 'Fotografia nu a fost găsită.' });
+      return;
+    }
+    if (!ensurePrivateR2StorageConfigured(response)) return;
+    await proxyR2ObjectToResponse(objectKey, response, true);
+  } catch (error) { next(error); }
 });
 
 // POST /api/inquiries - Submit a new inquiry
-app.post('/api/inquiries', async (request, response, next) => {
+app.post('/api/inquiries', formRateLimit, async (request, response, next) => {
   try {
     if (!ensureSupabaseAdminConfigured(response)) {
       return;
     }
 
     const { name, firstName, lastName, email, phone, projectDetails, gdprAccepted } = request.body;
-    const images = Array.isArray(request.body?.images)
+    let images = Array.isArray(request.body?.images)
       ? request.body.images.filter((image: unknown): image is string => typeof image === 'string' && image.trim().length > 0)
       : [];
 
@@ -1551,10 +1633,30 @@ app.post('/api/inquiries', async (request, response, next) => {
       response.status(400).json({ message: 'Acordul GDPR este obligatoriu.' });
       return;
     }
+    if (resolvedFirstName.length > 100 || resolvedLastName.length > 200 ||
+      (typeof email === 'string' && email.length > 254) ||
+      (typeof projectDetails === 'string' && projectDetails.length > 10000)) {
+      response.status(400).json({ message: 'Unul dintre câmpuri este prea lung.' });
+      return;
+    }
     if (images.length > 5) {
       response.status(400).json({ message: 'Poți atașa maximum 5 fotografii.' });
       return;
     }
+
+    const uploadTokens = request.body?.imageUploadTokens ?? [];
+    if (!Array.isArray(uploadTokens) || uploadTokens.length > 5 || (images.length > 0 && uploadTokens.length !== images.length)) {
+      response.status(400).json({ message: 'Fotografiile trebuie încărcate prin formular înainte de trimitere.' });
+      return;
+    }
+    const tickets: UploadTicket[] = uploadTokens.map((token: unknown) => verifyUploadTicket(token, ADMIN_SESSION_SECRET));
+    if (tickets.some((ticket) => ticket.purpose !== 'inquiry') || new Set(tickets.map((ticket) => ticket.objectKey)).size !== tickets.length) {
+      response.status(400).json({ message: 'Fotografiile atașate sunt invalide.' });
+      return;
+    }
+    if (tickets.length && !ensurePrivateR2StorageConfigured(response)) return;
+    await Promise.all(tickets.map(verifyR2UploadedObject));
+    images = tickets.map((ticket) => inquiryAttachmentUrl(ticket.objectKey));
 
     const inquiry = await createInquiry({
       firstName: resolvedFirstName,
@@ -1564,7 +1666,7 @@ app.post('/api/inquiries', async (request, response, next) => {
       projectDetails: projectDetails.trim(),
       status: 'Nou',
       images,
-    });
+    }, tickets.map((ticket) => ticket.objectKey));
 
     response.status(201).json(inquiry);
   } catch (error) {
@@ -1585,6 +1687,19 @@ app.delete('/api/inquiries/:id', requireAdminSession, async (request, response, 
       return;
     }
 
+    const inquiry = await getInquiryById(id);
+    if (!inquiry) {
+      response.status(404).json({ message: 'Cererea nu a fost găsită.' });
+      return;
+    }
+    const privateKeys = inquiry.images.map(inquiryObjectKeyFromUrl).filter((key): key is string => Boolean(key));
+    const legacyKeys = inquiry.images.map(extractManagedObjectKeyFromUrl)
+      .filter((key): key is string => Boolean(key?.startsWith('uploads/inquiries/')));
+    if (privateKeys.length && !ensurePrivateR2StorageConfigured(response)) return;
+    if (legacyKeys.length && !ensureR2StorageConfigured(response)) return;
+    // Keep the row until every delete succeeds, so a retry still has the object keys.
+    await Promise.all(privateKeys.map(deletePrivateR2Object));
+    await Promise.all(legacyKeys.map(deleteR2Object));
     await deleteInquiry(id);
 
     response.json({ success: true });
@@ -1594,6 +1709,7 @@ app.delete('/api/inquiries/:id', requireAdminSession, async (request, response, 
 });
 
 if (existsSync(distPath)) {
+  app.get(['/produse', '/produse/*', '/galerie-foto', '/admin', '/admin/*'], servePage);
   app.use(express.static(distPath));
 
   app.get('*', (request, response, next) => {

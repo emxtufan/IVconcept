@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useRef, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { SHOW_REEL_CONTENT } from '../data';
+import { useAccessibleDialog } from './useAccessibleDialog';
+import { useVisibleVideo } from './useVisibleVideo';
 
 export default function ShowReel() {
   const [isPlayingFull, setIsPlayingFull] = useState(false);
   const closeGuardUntilRef = useRef(0);
+  const previewRef = useRef<HTMLVideoElement>(null);
+  const reducedMotion = useReducedMotion();
+  useVisibleVideo(previewRef);
 
   const videoUrl = SHOW_REEL_CONTENT.videoUrl;
 
@@ -19,58 +24,48 @@ export default function ShowReel() {
     setIsPlayingFull(false);
   };
 
-  useEffect(() => {
-    if (!isPlayingFull) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeFullscreen();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isPlayingFull]);
+  const dialogRef = useAccessibleDialog(isPlayingFull, closeFullscreen);
 
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Video Box Container */}
-      <motion.div
-        whileHover={{ scale: 1.01 }}
+      <motion.button
+        type="button"
+        aria-label={`Redă videoclipul: ${SHOW_REEL_CONTENT.label}`}
+        aria-haspopup="dialog"
+        whileHover={reducedMotion ? undefined : { scale: 1.01 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
         onClick={openFullscreen}
-        className="relative aspect-[1.5/1] md:aspect-[1.48/1] w-full bg-[#050505] border border-zinc-300 overflow-hidden group cursor-pointer"
+        className="relative aspect-[1.5/1] md:aspect-[1.48/1] w-full bg-[#050505] border border-zinc-300 overflow-hidden group cursor-pointer text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8b6847]"
       >
         <video
-          autoPlay
+          ref={previewRef}
+          aria-hidden="true"
           loop
           muted
           playsInline
-          preload="auto"
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:opacity-95 group-hover:scale-[1.02] transition-all duration-700"
         >
-          <source src={videoUrl} type="video/mp4" />
+          <source data-src={videoUrl} type="video/mp4" />
         </video>
 
         {/* Subtle Dark Vignette Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none" />
+        <span className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none" />
 
         {/* Play Icon and Label in Top-Left */}
-        <div className="absolute top-5 left-5 flex items-center gap-3 select-none">
+        <span className="absolute top-5 left-5 flex items-center gap-3 select-none">
           {/* Solid white circle with black triangle */}
-          <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+          <span className="w-5 h-5 rounded-full bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
             <svg className="w-2.5 h-2.5 text-black fill-current ml-[1px]" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
             </svg>
-          </div>
+          </span>
           <span className="text-[11px] font-sans font-bold text-white tracking-[0.16em]">
             {SHOW_REEL_CONTENT.label}
           </span>
-        </div>
-      </motion.div>
+        </span>
+      </motion.button>
 
       {/* Under-Card Details Row */}
       <div className="flex items-center gap-12 text-[11px] tracking-[0.15em] font-sans font-semibold uppercase mt-0.5 px-0.5 relative z-20">
@@ -88,6 +83,12 @@ export default function ShowReel() {
             <AnimatePresence>
               {isPlayingFull && (
                 <motion.div
+                  ref={dialogRef}
+                  tabIndex={-1}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={SHOW_REEL_CONTENT.label || 'Videoclip IV Concept'}
+                  data-lenis-prevent
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -97,6 +98,7 @@ export default function ShowReel() {
                   {/* Close Button */}
                   <button
                     type="button"
+                    aria-label="Închide videoclipul"
                     onPointerDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -123,8 +125,10 @@ export default function ShowReel() {
                     <video
                       autoPlay
                       controls
+                      tabIndex={0}
+                      aria-label="Videoclip de prezentare IV Concept"
                       playsInline
-                      className="w-full h-full object-contain"
+                      className="w-full max-h-[80dvh] object-contain"
                     >
                       <source src={videoUrl} type="video/mp4" />
                     </video>

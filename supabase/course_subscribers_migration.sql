@@ -5,6 +5,7 @@ create table if not exists public.course_subscribers (
   last_name text not null,
   email text not null,
   phone text not null,
+  source text not null default 'registration',
   gdpr_accepted boolean not null check (gdpr_accepted = true),
   gdpr_accepted_at timestamptz not null default timezone('utc', now()),
   created_at timestamptz not null default timezone('utc', now())
@@ -13,10 +14,9 @@ create table if not exists public.course_subscribers (
 create index if not exists course_subscribers_created_at_idx
   on public.course_subscribers (created_at desc);
 
-grant insert on public.course_subscribers to anon, authenticated;
+alter table public.course_subscribers add column if not exists source text not null default 'registration';
+revoke insert on public.course_subscribers from anon, authenticated;
 alter table public.course_subscribers enable row level security;
 
 drop policy if exists "Public can register for courses" on public.course_subscribers;
-create policy "Public can register for courses"
-on public.course_subscribers for insert
-with check (gdpr_accepted = true);
+-- Submissions use the API service role after distributed rate limiting.

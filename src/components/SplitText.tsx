@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
+import { useReducedMotion } from 'motion/react';
 
 gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
 
@@ -33,11 +34,12 @@ const SplitText: React.FC<SplitTextProps> = ({
   to = { opacity: 1, y: 0 },
   threshold = 0.1,
   rootMargin = '-100px',
-  tag = 'p',
+  tag = 'span',
   textAlign = 'center',
   onLetterAnimationComplete
 }) => {
   const ref = useRef<HTMLParagraphElement>(null);
+  const reducedMotion = useReducedMotion();
   const animationCompletedRef = useRef(false);
   const onCompleteRef = useRef(onLetterAnimationComplete);
   const [fontsLoaded, setFontsLoaded] = useState<boolean>(false);
@@ -59,7 +61,7 @@ const SplitText: React.FC<SplitTextProps> = ({
 
   useGSAP(
     () => {
-      if (!ref.current || !text || !fontsLoaded) return;
+      if (!ref.current || !text || !fontsLoaded || reducedMotion) return;
       // Prevent re-animation if already completed
       if (animationCompletedRef.current) return;
       const el = ref.current as HTMLElement & {
@@ -153,8 +155,10 @@ const SplitText: React.FC<SplitTextProps> = ({
         JSON.stringify(to),
         threshold,
         rootMargin,
-        fontsLoaded
+        fontsLoaded,
+        reducedMotion
       ],
+      revertOnUpdate: true,
       scope: ref
     }
   );
@@ -167,6 +171,8 @@ const SplitText: React.FC<SplitTextProps> = ({
     };
     const classes = `split-parent overflow-hidden inline-block whitespace-normal ${className}`;
     const Tag = (tag || 'p') as React.ElementType;
+
+    if (reducedMotion) return <Tag className={classes} style={{ textAlign }}>{text}</Tag>;
 
     return (
       <>

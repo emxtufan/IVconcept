@@ -13,3 +13,6 @@ alter table public.inquiries
 alter table public.inquiries
   drop constraint if exists inquiries_gdpr_required,
   add constraint inquiries_gdpr_required check (gdpr_accepted = true);
+
+-- Backfill historical rows above, but require explicit consent on future inserts.
+alter table public.inquiries alter column gdpr_accepted drop default;

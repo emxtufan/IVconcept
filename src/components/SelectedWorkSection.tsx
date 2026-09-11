@@ -32,9 +32,9 @@ export default function SelectedWorkSection() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {categories.map((category) => (
             <article key={category.id} className="group border border-zinc-800 bg-zinc-950/30 p-5 md:p-7">
-              <a href={`/produse/${category.slug}`} className="block">
+              <a href={`/produse/${encodeURIComponent(category.slug)}`} className="block">
                 <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
-                  <img src={category.image} alt={category.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
+                  <img src={category.image} alt={category.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
                 </div>
                 <div className="flex items-end justify-between gap-6 pb-1 pt-7">
                   <div>

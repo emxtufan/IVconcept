@@ -2,17 +2,26 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/page.ts": {
+      "includeFiles": "{dist/index.html,supabase/siteContent.seed.json}"
+    }
+  },
   "routes": [
+    {
+      "src": "/(produse(?:/.*)?|galerie-foto/?|admin(?:/.*)?)",
+      "dest": "/api/page.ts"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/api/index.ts"
     },
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/uploads/(.*)",
       "dest": "/api/index.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/.*",

@@ -1,6 +1,7 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getSiteContent } from '../data';
+import { useAccessibleDialog } from './useAccessibleDialog';
 
 const SECTION_ANCHORS: Record<string, string> = {
   home: '#hero',
@@ -83,18 +84,7 @@ export default function Footer() {
   const [newsletterMessage, setNewsletterMessage] = useState('');
   const [legalModal, setLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
-  useEffect(() => {
-    if (!legalModal) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setLegalModal(null);
-    };
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [legalModal]);
+  const legalDialogRef = useAccessibleDialog<HTMLElement>(Boolean(legalModal), () => setLegalModal(null));
 
   const handleNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -142,6 +132,7 @@ export default function Footer() {
       <div className="sticky top-[calc(100svh-300px)] z-0 h-[300px] overflow-hidden">
         <img
           src={footerImage}
+          loading="lazy"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
@@ -182,8 +173,8 @@ export default function Footer() {
 
                 <div className="space-y-0.5 text-[14px] leading-[1.45] text-white/82">
                   <p>{footerContent.address}</p>
-                  <p>{footerContent.email}</p>
-                  <p>{footerContent.phone}</p>
+                  <a href={`mailto:${footerContent.email}`} className="block select-text">{footerContent.email}</a>
+                  <a href={`tel:${footerContent.phone.replace(/[^+0-9]/g, '')}`} className="block select-text">{footerContent.phone}</a>
                 </div>
               </div>
 
@@ -233,6 +224,9 @@ export default function Footer() {
                 <form className="mt-8" onSubmit={handleNewsletterSubmit}>
                   <input
                     type="email"
+                    autoComplete="email"
+                    aria-label="Email pentru newsletter"
+                    disabled={newsletterState === 'loading'}
                     value={newsletterEmail}
                     onChange={(event) => setNewsletterEmail(event.target.value)}
                     placeholder={footerContent.newsletterPlaceholder}
@@ -254,6 +248,7 @@ export default function Footer() {
                   </button>
                   {newsletterMessage ? (
                     <p
+                      role="status"
                       className={`mt-4 max-w-[300px] text-[12px] leading-[1.52] ${
                         newsletterState === 'error' ? 'text-[#f0b3b3]' : 'text-[#d9c1a0]'
                       }`}
@@ -329,7 +324,7 @@ export default function Footer() {
           if (event.target === event.currentTarget) setLegalModal(null);
         }}
       >
-        <article role="dialog" aria-modal="true" aria-labelledby="legal-modal-title" className="relative max-h-[88svh] w-full max-w-[760px] overflow-y-auto bg-[#eee5d9] p-6 text-[#2c2218] shadow-2xl md:p-10">
+        <article ref={legalDialogRef} tabIndex={-1} data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="legal-modal-title" className="relative max-h-[88svh] w-full max-w-[760px] overflow-y-auto bg-[#eee5d9] p-6 text-[#2c2218] shadow-2xl md:p-10">
           <button type="button" onClick={() => setLegalModal(null)} aria-label="Închide" className="absolute right-5 top-4 text-3xl font-light">×</button>
           <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#9b744e]">IV Concept</span>
           <h2 id="legal-modal-title" className="mt-4 pr-10 font-display text-3xl font-light tracking-tight md:text-4xl">

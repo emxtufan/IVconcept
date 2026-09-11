@@ -128,7 +128,7 @@ export default function GalleryWallPage() {
           <div className="rounded-[30px] border border-dashed border-[#2c2218]/12 bg-[#f3ece3]/82 px-6 py-16 text-center">
             <p className="text-sm font-medium text-[#2c2218]">Nu exista galerii separate inca.</p>
             <p className="mt-2 text-sm text-[#2c2218]/42">
-              Creeaza prima galerie din `/admin`, apoi incarca imagini in folderul ei dedicat.
+              Descoperă între timp proiectele prezentate pe pagina principală.
             </p>
           </div>
         ) : (
@@ -179,6 +179,9 @@ export default function GalleryWallPage() {
                       >
                         <img
                           src={imageUrl}
+                          width={item.width ?? undefined}
+                          height={item.height ?? undefined}
+                          decoding="async"
                           alt={item.originalName}
                           className="h-auto w-full object-cover transition duration-500 hover:scale-[1.015]"
                           loading="lazy"

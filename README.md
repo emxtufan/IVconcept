@@ -64,6 +64,7 @@ R2_ACCOUNT_ID=your-cloudflare-account-id
 R2_ACCESS_KEY_ID=your-r2-access-key-id
 R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
 R2_BUCKET_NAME=your-r2-bucket-name
+R2_PRIVATE_BUCKET_NAME=your-private-inquiry-bucket
 R2_PUBLIC_BASE_URL=https://assets.example.com
 ```
 
@@ -72,6 +73,7 @@ Explicatii:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` - cheie publica pentru citire/public client
 - `SUPABASE_SERVICE_ROLE_KEY` - cheie privata folosita doar pe server pentru write/admin
 - `R2_PUBLIC_BASE_URL` - domain-ul public al bucket-ului R2, recomandat pe custom domain
+- `R2_PRIVATE_BUCKET_NAME` - bucket separat pentru fotografiile din cereri; fără domeniu public și fără acces `r2.dev`
 - `ADMIN_PASSWORD` - parola pentru `/admin`
 - `ADMIN_SESSION_SECRET` - secretul cookie-ului de sesiune admin
 
@@ -220,6 +222,7 @@ R2_ACCOUNT_ID
 R2_ACCESS_KEY_ID
 R2_SECRET_ACCESS_KEY
 R2_BUCKET_NAME
+R2_PRIVATE_BUCKET_NAME
 R2_PUBLIC_BASE_URL
 ```
 
@@ -365,3 +368,41 @@ Daca dupa mult timp revii pe proiect, urmeaza ordinea:
 3. verifici R2 + CORS
 4. rulezi local `npm run dev`
 5. testezi admin + upload + save
+
+## 16. Oferta de curs si actualizarile de securitate
+
+Oferta de curs apare automat la fiecare incarcare a unei pagini publice. Acelasi modal se deschide din butonul sectiunii de curs; in `/admin` nu apare automat. In editorul de continut poti modifica titlul, descrierea, fotografia, textul butonului, mesajul de succes si afisarea automata. Formularul cere email si acord pentru prelucrarea datelor, apoi salveaza inscrierea in `course_subscribers`, vizibila in **Abonati cursuri**. Nu trimite automat emailuri.
+
+Continutul existent primeste implicit oferta fara reinitializarea bazei de date. **Nu rula `npm run db:seed` pe un site existent pentru aceasta actualizare:** comanda inlocuieste continutul editat.
+
+### Activare pe un site existent
+
+1. Aplica `supabase/backend_security_migration.sql` in Supabase SQL Editor. Pentru o instalare noua, `supabase/schema.sql` include deja actualizarile. Migrarea se poate reaplica.
+2. Creeaza un bucket R2 separat pentru anexele cererilor, fara acces public prin `r2.dev` sau custom domain. Un prefix intr-un bucket public nu face fisierele private.
+3. Configureaza `R2_PRIVATE_BUCKET_NAME` local si in Vercel. Cheile R2 trebuie sa permita accesul la ambele bucket-uri; configureaza CORS pentru upload in ambele, conform sectiunii 4.5.
+4. Pentru fotografii ale cererilor deja existente, verifica raportul scriptului de mai jos, apoi ruleaza varianta `--apply`. Aceasta copiaza si verifica fisierele in bucket-ul privat, actualizeaza referintele in baza de date si elimina originalele publice care nu mai sunt folosite. Dupa migrare, goleste cache-ul CDN pentru vechile adrese `/uploads/inquiries/*`. Scriptul identifica adresele din `R2_PUBLIC_BASE_URL` curent; adresele din domenii publice folosite anterior necesita verificare separata.
+5. Ruleaza verificarile, publica aplicatia si verifica autentificarea, inscrierea la curs si uploadul pe mediul public.
+
+```bash
+# Raport: citeste datele existente, fara modificari
+node --import tsx server/migrateLegacyInquiryAttachments.ts
+
+# Migrare efectiva a anexelor vechi
+node --import tsx server/migrateLegacyInquiryAttachments.ts --apply
+
+# Verificari locale
+npm run lint
+npm test
+npm run build
+```
+
+Migrarea SQL este necesara pentru noile functii de limitare a cererilor si pentru anexele private. Daca lipseste, rutele protejate pot raspunde cu 503. Fara bucket-ul privat configurat nu se pot incarca fotografii ale cererilor; formularele fara fotografii nu depind de acesta.
+
+### Comportament si verificare
+
+- Uploadurile folosesc semnaturi pentru dimensiunea exacta si MIME, verificarea obiectului stocat si tokenuri legate de fisier. Browserul seteaza automat `Content-Length`. SVG si HTML nu mai sunt acceptate; foloseste PNG sau WebP pentru logo-uri.
+- Anexele cererilor se citesc prin ruta de admin cu `no-store`. Stergerea elimina fisierele inaintea inregistrarii; daca storage-ul raspunde cu eroare, inregistrarea ramane pentru o noua incercare. Uploadurile private expirate sunt curatate la cereri ulterioare.
+- Redenumirea galeriilor copiaza fisierele si actualizeaza baza de date atomic inainte de eliminarea originalelor nefolosite. In caz de rezultat incert, copiile sunt pastrate pentru a evita pierderea fisierelor; orice curatare ulterioara trebuie sa verifice referintele.
+- `TRUST_PROXY_HOPS` este implicit `0`; seteaza-l numai conform numarului de proxy-uri de incredere din infrastructura. Vercel este tratat separat.
+- `npm test` foloseste servicii simulate si PostgreSQL in memorie prin PGlite. Nu citeste si nu modifica baza de date ori fisierele din productie. Acopera salvarea in admin, securitatea uploadurilor, rutele HTTP, migrarea SQL, oferta de curs si metadatele paginilor.
+- Metadatele paginilor de produse, galerie si admin sunt livrate si in HTML-ul initial prin `api/page.ts`. Configuratia Vercel include explicit fisierele necesare functiei, conform [documentatiei Vercel](https://vercel.com/kb/guide/how-can-i-use-files-in-serverless-functions).

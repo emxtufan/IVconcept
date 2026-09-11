@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 
 interface TrueFocusProps {
   sentence?: string;
@@ -30,14 +30,15 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
   pauseBetweenAnimations = 1
 }) => {
   const words = sentence.split(separator);
+  const reducedMotion = useReducedMotion();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [lastActiveIndex, setLastActiveIndex] = useState<number | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLSpanElement | null>(null);
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [focusRect, setFocusRect] = useState<FocusRect>({ x: 0, y: 0, width: 0, height: 0 });
 
   useEffect(() => {
-    if (!manualMode) {
+    if (!manualMode && !reducedMotion && words.length > 1) {
       const interval = setInterval(
         () => {
           setCurrentIndex(prev => (prev + 1) % words.length);
@@ -47,7 +48,7 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
 
       return () => clearInterval(interval);
     }
-  }, [manualMode, animationDuration, pauseBetweenAnimations, words.length]);
+  }, [manualMode, animationDuration, pauseBetweenAnimations, words.length, reducedMotion]);
 
   useEffect(() => {
     if (currentIndex === null || currentIndex === -1) return;
@@ -77,8 +78,10 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
     }
   };
 
+  if (reducedMotion) return <span>{sentence}</span>;
+
   return (
-    <div
+    <span
       className="relative flex gap-4 justify-center items-center flex-wrap"
       ref={containerRef}
       style={{ outline: 'none', userSelect: 'none' }}
@@ -114,7 +117,7 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
         );
       })}
 
-      <motion.div
+      <motion.span
         className="absolute top-0 left-0 pointer-events-none box-border border-0"
         animate={{
           x: focusRect.x,
@@ -161,8 +164,8 @@ const TrueFocus: React.FC<TrueFocusProps> = ({
             filter: 'drop-shadow(0 0 1px var(--border-color))'
           }}
         ></span>
-      </motion.div>
-    </div>
+      </motion.span>
+    </span>
   );
 };
 

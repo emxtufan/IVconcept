@@ -1,4 +1,4 @@
-import { motion, Transition, Easing } from 'motion/react';
+import { motion, useReducedMotion, Transition, Easing } from 'motion/react';
 import { useEffect, useRef, useState, useMemo } from 'react';
 
 type BlurTextProps = {
@@ -45,10 +45,11 @@ const BlurText: React.FC<BlurTextProps> = ({
 }) => {
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
   const [inView, setInView] = useState(false);
-  const ref = useRef<HTMLParagraphElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || reducedMotion) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -60,7 +61,7 @@ const BlurText: React.FC<BlurTextProps> = ({
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
-  }, [threshold, rootMargin]);
+  }, [threshold, rootMargin, reducedMotion]);
 
   const defaultFrom = useMemo(
     () =>
@@ -87,8 +88,10 @@ const BlurText: React.FC<BlurTextProps> = ({
   const totalDuration = stepDuration * (stepCount - 1);
   const times = Array.from({ length: stepCount }, (_, i) => (stepCount === 1 ? 0 : i / (stepCount - 1)));
 
+  if (reducedMotion) return <span className={className}>{text}</span>;
+
   return (
-    <p ref={ref} className={`blur-text ${className} flex flex-wrap`}>
+    <span ref={ref} className={`blur-text ${className} flex flex-wrap`}>
       {elements.map((segment, index) => {
         const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
 
@@ -116,7 +119,7 @@ const BlurText: React.FC<BlurTextProps> = ({
           </motion.span>
         );
       })}
-    </p>
+    </span>
   );
 };
 

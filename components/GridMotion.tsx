@@ -1,5 +1,6 @@
-import { useEffect, useRef, FC, ReactNode } from 'react';
+import { useEffect, useRef, useState, FC, ReactNode } from 'react';
 import { gsap } from 'gsap';
+import { useReducedMotion } from 'motion/react';
 
 interface GridMotionProps {
   items?: (string | ReactNode)[];
@@ -23,6 +24,8 @@ const fillItemsToCount = (items: (string | ReactNode)[], totalItems: number) => 
 
 const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black' }) => {
   const gridRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+  const [paused, setPaused] = useState(false);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cycleWidthsRef = useRef<number[]>([]);
   const rowPositionsRef = useRef<number[]>([]);
@@ -34,8 +37,6 @@ const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black' }
   );
 
   useEffect(() => {
-    gsap.ticker.lagSmoothing(0);
-
     const rowElements = rowRefs.current.filter(Boolean) as HTMLDivElement[];
     if (!rowElements.length) {
       return;
@@ -94,18 +95,35 @@ const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black' }
       });
     };
 
-    gsap.ticker.add(updateMotion);
+    let visible = false;
+    let running = false;
+    const syncMotion = () => {
+      const shouldRun = visible && !document.hidden && !reducedMotion && !paused;
+      if (shouldRun === running) return;
+      running = shouldRun;
+      if (running) gsap.ticker.add(updateMotion);
+      else gsap.ticker.remove(updateMotion);
+    };
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      syncMotion();
+    });
+    if (gridRef.current) visibilityObserver.observe(gridRef.current);
+    document.addEventListener('visibilitychange', syncMotion);
     window.addEventListener('resize', setMeasurements);
 
     return () => {
       resizeObserver.disconnect();
+      visibilityObserver.disconnect();
+      document.removeEventListener('visibilitychange', syncMotion);
       window.removeEventListener('resize', setMeasurements);
       gsap.ticker.remove(updateMotion);
     };
-  }, [items.length]);
+  }, [items.length, reducedMotion, paused]);
 
   return (
-    <div ref={gridRef} className="h-full w-full overflow-hidden">
+    <div ref={gridRef} className="relative h-full w-full overflow-hidden">
+      {!reducedMotion && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="absolute right-4 top-4 z-20 rounded-full border border-white/25 bg-black/55 px-4 py-2 text-xs text-white backdrop-blur-sm">{paused ? 'Pornește mișcarea' : 'Oprește mișcarea'}</button>}
       <section
         className="relative flex h-full w-full items-center justify-center overflow-hidden"
         style={{
@@ -134,9 +152,12 @@ const GridMotion: FC<GridMotionProps> = ({ items = [], gradientColor = 'black' }
                     >
                       <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#111] text-white text-[1.5rem]">
                         {isImage ? (
-                          <div
-                            className="absolute left-0 top-0 h-full w-full bg-cover bg-center"
-                            style={{ backgroundImage: `url(${content})` }}
+                          <img
+                            src={content as string}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute left-0 top-0 h-full w-full object-cover"
                           />
                         ) : (
                           <div className="relative z-[1] flex h-full w-full items-center justify-center p-4 text-center">

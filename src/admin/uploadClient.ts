@@ -1,4 +1,5 @@
 export interface UploadedMediaAsset {
+  uploadToken?: string;
   url: string;
   filename: string;
   originalName: string;
@@ -230,6 +231,12 @@ export async function uploadFilesWithProgress(
   onProgress: (progress: number) => void,
   finalizeEndpoint = '/api/uploads/media',
 ) {
+  if (finalizeEndpoint === '/api/inquiries/uploads') {
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
+    if (files.length < 1 || files.length > 5 || files.some((file) => !allowedTypes.has(file.type) || file.size <= 0 || file.size > 15 * 1024 * 1024)) {
+      throw new Error('Alege maximum 5 fotografii JPG, PNG, WebP sau AVIF, de cel mult 15 MB fiecare.');
+    }
+  }
   const preparedFiles = await Promise.all(files.map((file) => prepareUploadFile(file)));
 
   const presignResponse = await fetch(resolvePresignEndpoint(finalizeEndpoint), {
