@@ -1,6 +1,8 @@
 -- Apply once before deploying the hardened backend. Safe to re-run.
 -- All functions below are server-only; public forms must go through the API.
 
+begin;
+
 revoke insert on public.inquiries, public.newsletter_subscribers, public.course_subscribers from anon, authenticated;
 drop policy if exists "Public can submit inquiries" on public.inquiries;
 drop policy if exists "Public can subscribe to newsletter" on public.newsletter_subscribers;
@@ -203,3 +205,7 @@ end;
 $$;
 revoke all on function public.migrate_inquiry_attachments(bigint, jsonb, jsonb, text[]) from public, anon, authenticated;
 grant execute on function public.migrate_inquiry_attachments(bigint, jsonb, jsonb, text[]) to service_role;
+
+-- Publish the new RPCs and columns to the Data API after the transaction commits.
+notify pgrst, 'reload schema';
+commit;
