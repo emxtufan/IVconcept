@@ -19,3 +19,23 @@ test('an administrator can change the offer and disable automatic display', () =
   assert.equal(result.courseOffer.title, 'Curs nou');
   assert.equal(result.courseOffer.imageUrl, '/uploads/course.webp');
 });
+
+test('older offers keep their desktop image when no mobile image has been configured', () => {
+  const content = structuredClone(seed) as unknown as SiteContent;
+  content.courseOffer.imageUrl = '/uploads/existing-course.webp';
+  delete content.courseOffer.mobileImageUrl;
+  const result = normalizeSiteContent(content);
+  assert.equal(result.courseOffer.imageUrl, '/uploads/existing-course.webp');
+  assert.equal(result.courseOffer.mobileImageUrl, '');
+});
+
+test('a separate mobile image survives content normalization and can be cleared', () => {
+  const content = structuredClone(seed) as unknown as SiteContent;
+  content.courseOffer.imageUrl = '/uploads/desktop-course.webp';
+  content.courseOffer.mobileImageUrl = '  /uploads/mobile-course.webp  ';
+  const saved = normalizeSiteContent(content);
+  assert.equal(saved.courseOffer.imageUrl, '/uploads/desktop-course.webp');
+  assert.equal(saved.courseOffer.mobileImageUrl, '/uploads/mobile-course.webp');
+  saved.courseOffer.mobileImageUrl = '  ';
+  assert.equal(normalizeSiteContent(saved).courseOffer.mobileImageUrl, '');
+});

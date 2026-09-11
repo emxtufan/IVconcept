@@ -371,9 +371,11 @@ Daca dupa mult timp revii pe proiect, urmeaza ordinea:
 
 ## 16. Oferta de curs si actualizarile de securitate
 
-Oferta de curs apare automat la fiecare incarcare a unei pagini publice. Acelasi modal se deschide din butonul sectiunii de curs; in `/admin` nu apare automat. In editorul de continut poti modifica titlul, descrierea, fotografia, textul butonului, mesajul de succes si afisarea automata. Formularul cere email si acord pentru prelucrarea datelor, apoi salveaza inscrierea in `course_subscribers`, vizibila in **Abonati cursuri**. Nu trimite automat emailuri.
+Oferta de curs apare automat la fiecare incarcare a unei pagini publice. Acelasi modal se deschide din butonul sectiunii de curs; in `/admin` nu apare automat. In editorul de continut poti modifica titlul, descrierea, fotografia, textul butonului, mesajul de succes si afisarea automata. Formularul cere nume, numar de telefon, email si acord pentru prelucrarea datelor, apoi salveaza inscrierea in `course_subscribers`, vizibila in **Abonati cursuri**. Numele complet este pastrat in campul existent `first_name`; aceste campuri de contact nu necesita o migrare noua. Nu trimite automat emailuri.
 
 Continutul existent primeste implicit oferta fara reinitializarea bazei de date. **Nu rula `npm run db:seed` pe un site existent pentru aceasta actualizare:** comanda inlocuieste continutul editat.
+
+In **Oferta cursului**, campurile **Imagine curs — desktop** si **Imagine curs — mobil** permit incarcarea unor fotografii diferite. Sub 768 px, fotografia pentru mobil se afiseaza integral, la proportiile originale, inclusiv cand este verticala. Daca imaginea pentru mobil lipseste, este folosita cea pentru desktop. Continutul existent ramane compatibil; aceasta setare nu necesita migrare SQL.
 
 ### Activare pe un site existent
 

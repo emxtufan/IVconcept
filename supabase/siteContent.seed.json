@@ -2,8 +2,9 @@
   "courseOffer": {
     "enabled": true,
     "title": "Înscrie-te la cursul IV Concept",
-    "description": "Descoperă tehnicile din spatele finisajelor decorative IV Concept. Lasă-ne adresa de email pentru înscriere și te vom contacta cu oferta și detaliile cursului.",
+    "description": "Descoperă tehnicile din spatele finisajelor decorative IV Concept. Completează datele de contact pentru înscriere și te vom contacta cu oferta și detaliile cursului.",
     "imageUrl": "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80",
+    "mobileImageUrl": "",
     "buttonText": "Mă înscriu la curs",
     "successMessage": "Înscrierea ta a fost înregistrată. Te vom contacta pe email cu oferta și detaliile cursului."
   },

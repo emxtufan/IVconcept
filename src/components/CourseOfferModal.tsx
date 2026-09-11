@@ -13,11 +13,13 @@ interface CourseOfferModalProps {
 export default function CourseOfferModal({ content, isOpen, onClose }: CourseOfferModalProps) {
   const id = useId();
   const dialogRef = useAccessibleDialog(isOpen, onClose);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [failedImage, setFailedImage] = useState('');
+  const [failedImages, setFailedImages] = useState<string[]>([]);
   const requestRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => requestRef.current?.abort(), []);
@@ -34,13 +36,15 @@ export default function CourseOfferModal({ content, isOpen, onClose }: CourseOff
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ email: email.trim(), gdprAccepted, source: 'course-offer' }),
+        body: JSON.stringify({ firstName: name.trim(), email: email.trim(), phone: phone.trim(), gdprAccepted, source: 'course-offer' }),
       });
       const payload = await response.json().catch(() => ({})) as { message?: string };
       if (!response.ok) throw new Error(payload.message || 'Nu am putut înregistra cererea. Te rugăm să încerci din nou.');
       setStatus('success');
       setMessage(content.successMessage);
+      setName('');
       setEmail('');
+      setPhone('');
       setGdprAccepted(false);
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -52,6 +56,18 @@ export default function CourseOfferModal({ content, isOpen, onClose }: CourseOff
   }
 
   if (!isOpen || typeof document === 'undefined') return null;
+
+  const usableImage = (url?: string) => {
+    if (!url?.trim()) return '';
+    try {
+      return failedImages.includes(new URL(url.trim(), document.baseURI).href) ? '' : url.trim();
+    } catch {
+      return '';
+    }
+  };
+  const desktopImage = usableImage(content.imageUrl);
+  const mobileImage = usableImage(content.mobileImageUrl);
+  const fallbackImage = desktopImage || mobileImage;
 
   return createPortal(
     <div
@@ -77,10 +93,24 @@ export default function CourseOfferModal({ content, isOpen, onClose }: CourseOff
           >
             <X size={19} aria-hidden="true" />
           </button>
-          <div className="relative h-40 overflow-hidden bg-[#2c2218] sm:h-48 md:h-auto md:min-h-[510px]">
-            {content.imageUrl && failedImage !== content.imageUrl
-              ? <img src={content.imageUrl} alt="Lucrări decorative IV Concept" className="absolute inset-0 h-full w-full object-cover" fetchPriority="high" onError={() => setFailedImage(content.imageUrl)} />
-              : <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#aa8962,transparent_70%),linear-gradient(145deg,#776047,#2c2218)]" />}
+          <div className="relative overflow-hidden bg-[#2c2218] md:min-h-[510px]">
+            {fallbackImage ? (
+              <picture className="block md:absolute md:inset-0">
+                {mobileImage && <source media="(max-width: 767px)" srcSet={mobileImage} />}
+                <img
+                  src={fallbackImage}
+                  alt="Lucrări decorative IV Concept"
+                  className="block h-auto w-full md:h-full md:object-cover"
+                  fetchPriority="high"
+                  onError={(event) => {
+                    const failedUrl = event.currentTarget.currentSrc || event.currentTarget.src;
+                    setFailedImages((images) => images.includes(failedUrl) ? images : [...images, failedUrl]);
+                  }}
+                />
+              </picture>
+            ) : (
+              <div aria-hidden="true" className="aspect-[4/3] bg-[radial-gradient(ellipse_at_top_left,#aa8962,transparent_70%),linear-gradient(145deg,#776047,#2c2218)] md:absolute md:inset-0 md:aspect-auto" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-[#130a01]/80 via-transparent to-transparent" />
             <div className="absolute bottom-5 left-6 text-white md:bottom-8 md:left-8">
               <span className="block font-display text-2xl tracking-tight md:text-3xl">IV Concept</span>
@@ -100,6 +130,45 @@ export default function CourseOfferModal({ content, isOpen, onClose }: CourseOff
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="mt-7" aria-busy={status === 'sending'}>
+                <div className="mb-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor={`${id}-name`} className="block text-sm font-semibold">Nume</label>
+                    <input
+                      id={`${id}-name`}
+                      name="name"
+                      type="text"
+                      autoComplete="name"
+                      required
+                      maxLength={100}
+                      pattern={String.raw`.*\S.*`}
+                      title="Completează numele tău."
+                      value={name}
+                      disabled={status === 'sending'}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder="Numele tău complet"
+                      className="mt-2 h-12 w-full min-w-0 rounded-lg border border-[#2c2218]/20 bg-white/55 px-4 text-base outline-none transition focus:border-[#8b6847] focus:ring-2 focus:ring-[#8b6847]/20 disabled:opacity-60"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor={`${id}-phone`} className="block text-sm font-semibold">Număr de telefon</label>
+                    <input
+                      id={`${id}-phone`}
+                      name="phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      required
+                      maxLength={30}
+                      pattern={String.raw`\+?[0-9\s\(\)\-]{7,30}`}
+                      title="Introdu un număr de telefon valid, de exemplu 0712 345 678."
+                      value={phone}
+                      disabled={status === 'sending'}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder="0712 345 678"
+                      className="mt-2 h-12 w-full min-w-0 rounded-lg border border-[#2c2218]/20 bg-white/55 px-4 text-base outline-none transition focus:border-[#8b6847] focus:ring-2 focus:ring-[#8b6847]/20 disabled:opacity-60"
+                    />
+                  </div>
+                </div>
                 <label htmlFor={`${id}-email`} className="block text-sm font-semibold">Adresa ta de email</label>
                 <input
                   id={`${id}-email`}
@@ -116,7 +185,7 @@ export default function CourseOfferModal({ content, isOpen, onClose }: CourseOff
                 />
                 <label className="mt-4 flex items-start gap-3 text-sm leading-5 text-[#2c2218]/75">
                   <input type="checkbox" required checked={gdprAccepted} disabled={status === 'sending'} onChange={(event) => setGdprAccepted(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#2c2218]" />
-                  <span>Sunt de acord să fiu contactat(ă) prin email cu oferta și detaliile cursului și cu prelucrarea datelor în acest scop.</span>
+                  <span>Sunt de acord să fiu contactat(ă) prin email sau telefon cu oferta și detaliile cursului și cu prelucrarea datelor în acest scop.</span>
                 </label>
                 {message && <p className="mt-4 text-sm leading-5 text-red-800" role="alert">{message}</p>}
                 <button type="submit" disabled={status === 'sending'} className="mt-5 flex min-h-12 w-full items-center justify-between gap-3 rounded-lg bg-[#2c2218] px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.1em] text-[#f5efe7] transition hover:bg-[#4a3524] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8b6847] disabled:opacity-60">

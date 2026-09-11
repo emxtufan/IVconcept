@@ -1459,7 +1459,7 @@ app.post('/api/course-subscribers', formRateLimit, async (request, response, nex
     const phone = typeof request.body?.phone === 'string' ? request.body.phone.trim() : '';
     const gdprAccepted = request.body?.gdprAccepted === true;
     const source = request.body?.source === 'course-offer' ? 'course-offer' : 'registration';
-    if (!email || !gdprAccepted || (source !== 'course-offer' && (!firstName || !lastName || !phone))) {
+    if (!firstName || !phone || !email || !gdprAccepted || (source !== 'course-offer' && !lastName)) {
       response.status(400).json({ message: 'Completează toate câmpurile și acceptă acordul GDPR.' });
       return;
     }
@@ -1471,7 +1471,8 @@ app.post('/api/course-subscribers', formRateLimit, async (request, response, nex
       response.status(400).json({ message: 'Adresa de email nu este validă.' });
       return;
     }
-    if ((source !== 'course-offer' || phone) && !/^[+0-9\s\-()]{7,30}$/.test(phone)) {
+    const phoneDigitCount = phone.replace(/\D/g, '').length;
+    if (!/^\+?[0-9 ()-]+$/.test(phone) || phoneDigitCount < 7 || phoneDigitCount > 15) {
       response.status(400).json({ message: 'Numărul de telefon nu este valid.' });
       return;
     }

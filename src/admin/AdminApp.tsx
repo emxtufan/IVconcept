@@ -3253,7 +3253,11 @@ export default function AdminApp() {
                       </label>
                     ))}
                   </div>
-                  <MediaFieldEditor label="Imagine curs" value={draft.courseOffer.imageUrl} path={['courseOffer', 'imageUrl']} onChange={handleChange} mediaKind="image" />
+                  <div className="space-y-5">
+                    <MediaFieldEditor label="Imagine curs — desktop" value={draft.courseOffer.imageUrl} path={['courseOffer', 'imageUrl']} onChange={handleChange} mediaKind="image" />
+                    <MediaFieldEditor label="Imagine curs — mobil" value={draft.courseOffer.mobileImageUrl} path={['courseOffer', 'mobileImageUrl']} onChange={handleChange} mediaKind="image" />
+                    <p className="text-sm leading-relaxed text-[#2c2218]/65">Pe ecrane sub 768 px, imaginea pentru mobil este afișată integral, în proporțiile sale originale. Poți folosi și o fotografie verticală. Dacă lași câmpul gol, se folosește imaginea pentru desktop.</p>
+                  </div>
                 </div>
               ) : activeSection === 'imageSection' ? (
                 <ImageSectionEditor

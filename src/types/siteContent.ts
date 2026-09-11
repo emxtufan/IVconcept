@@ -160,6 +160,7 @@ export interface CourseOfferContent {
   title: string;
   description: string;
   imageUrl: string;
+  mobileImageUrl: string;
   buttonText: string;
   successMessage: string;
 }
@@ -167,8 +168,9 @@ export interface CourseOfferContent {
 export const DEFAULT_COURSE_OFFER: CourseOfferContent = {
   enabled: true,
   title: 'Înscrie-te la cursul IV Concept',
-  description: 'Descoperă tehnicile din spatele finisajelor decorative IV Concept. Lasă-ne adresa de email pentru înscriere și te vom contacta cu oferta și detaliile cursului.',
+  description: 'Descoperă tehnicile din spatele finisajelor decorative IV Concept. Completează datele de contact pentru înscriere și te vom contacta cu oferta și detaliile cursului.',
   imageUrl: 'https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80',
+  mobileImageUrl: '',
   buttonText: 'Mă înscriu la curs',
   successMessage: 'Înscrierea ta a fost înregistrată. Te vom contacta pe email cu oferta și detaliile cursului.',
 };
@@ -179,6 +181,7 @@ export function normalizeCourseOffer(content?: Partial<CourseOfferContent>): Cou
     title: typeof content?.title === 'string' ? content.title : DEFAULT_COURSE_OFFER.title,
     description: typeof content?.description === 'string' ? content.description : DEFAULT_COURSE_OFFER.description,
     imageUrl: typeof content?.imageUrl === 'string' && content.imageUrl.trim() ? content.imageUrl : DEFAULT_COURSE_OFFER.imageUrl,
+    mobileImageUrl: typeof content?.mobileImageUrl === 'string' ? content.mobileImageUrl.trim() : '',
     buttonText: typeof content?.buttonText === 'string' ? content.buttonText : DEFAULT_COURSE_OFFER.buttonText,
     successMessage: typeof content?.successMessage === 'string' ? content.successMessage : DEFAULT_COURSE_OFFER.successMessage,
   };

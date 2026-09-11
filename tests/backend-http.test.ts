@@ -81,16 +81,52 @@ const post = (route: string, payload: unknown) => fetch(`${origin}${route}`, {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
 });
 
-test('HTTP: course offer accepts email-only and keeps full registration validation', async () => {
+test('HTTP: course offer stores the supplied full name and phone and preserves full registration', async () => {
   counters.clear();
-  assert.equal((await post('/api/course-subscribers', { email: 'offer@example.com', gdprAccepted: true, source: 'course-offer' })).status, 201);
+  assert.equal((await post('/api/course-subscribers', {
+    firstName: '  Ana Maria Popescu  ', phone: '  +40 (712) 345-678  ',
+    email: 'Offer@example.com', gdprAccepted: true, source: 'course-offer',
+  })).status, 201);
   assert.equal(courseInsert?.source, 'course-offer');
-  assert.equal(courseInsert?.first_name, '');
-  assert.equal(courseInsert?.phone, '');
+  assert.equal(courseInsert?.first_name, 'Ana Maria Popescu');
+  assert.equal(courseInsert?.last_name, '');
+  assert.equal(courseInsert?.phone, '+40 (712) 345-678');
+  assert.equal(courseInsert?.email, 'offer@example.com');
   assert.equal((await post('/api/course-subscribers', { email: 'full@example.com', gdprAccepted: true })).status, 400);
-  assert.equal((await post('/api/course-subscribers', { email: 'offer@example.com', gdprAccepted: false, source: 'course-offer' })).status, 400);
+  assert.equal((await post('/api/course-subscribers', { firstName: 'Ana', phone: '0712345678', email: 'full@example.com', gdprAccepted: true })).status, 400);
   assert.equal((await post('/api/course-subscribers', { firstName: 'Ana', lastName: 'Test', phone: '0712345678', email: 'full@example.com', gdprAccepted: true })).status, 201);
   assert.equal(courseInsert?.source, 'registration');
+  assert.equal(courseInsert?.first_name, 'Ana');
+  assert.equal(courseInsert?.last_name, 'Test');
+  assert.equal(courseInsert?.phone, '0712345678');
+});
+
+test('HTTP: course offer requires name, phone, email and explicit consent', async () => {
+  counters.clear();
+  const valid = { firstName: 'Ana Popescu', phone: '0712345678', email: 'offer@example.com', gdprAccepted: true, source: 'course-offer' };
+  const invalidFields = [
+    { firstName: undefined }, { firstName: '  ' }, { phone: undefined }, { phone: '  ' },
+    { email: undefined }, { email: 'invalid' }, { gdprAccepted: false }, { gdprAccepted: 'true' },
+  ];
+  for (const fields of invalidFields) {
+    courseInsert = undefined;
+    assert.equal((await post('/api/course-subscribers', { ...valid, ...fields })).status, 400, JSON.stringify(fields));
+    assert.equal(courseInsert, undefined, 'Invalid submissions must not reach storage');
+  }
+});
+
+test('HTTP: course phone validation requires 7 to 15 digits with an optional leading plus', async () => {
+  counters.clear();
+  const valid = { firstName: 'Ana Popescu', email: 'offer@example.com', gdprAccepted: true, source: 'course-offer' };
+  for (const phone of ['()----()', '123456', '1234567890123456', '0712+345678', '++40712345678', '0712abc345678', '0712\n345678', `${'('.repeat(24)}1234567`]) {
+    courseInsert = undefined;
+    assert.equal((await post('/api/course-subscribers', { ...valid, phone })).status, 400, phone);
+    assert.equal(courseInsert, undefined, 'Invalid phone numbers must not reach storage');
+  }
+  for (const phone of ['1234567', '+123456789012345']) {
+    assert.equal((await post('/api/course-subscribers', { ...valid, phone })).status, 201, phone);
+    assert.equal(courseInsert?.phone, phone);
+  }
 });
 
 test('HTTP: incorrect admin passwords are throttled and protection failure closes the endpoint', async () => {
