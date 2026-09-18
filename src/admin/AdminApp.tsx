@@ -2242,6 +2242,8 @@ const SECTION_ORDER: AdminSectionKey[] = [
   'slidersSection',
   'videoCardSection',
   'courseOffer',
+  'coursePage',
+  'legal',
   'reviews',
   'footer',
   'galleries',
@@ -2310,7 +2312,17 @@ const ADMIN_SECTION_META: Record<AdminSectionKey, AdminSectionMeta> = {
   courseOffer: {
     label: 'Oferta cursului',
     usage: 'Fereastra de înscriere la curs',
-    description: 'Editezi imaginea, oferta și mesajele afișate în fereastra de înscriere la curs.',
+    description: 'Editezi imaginea, oferta și mesajele afișate în fereastra de înscriere la curs, plus textul butonului care duce la pagina cursului.',
+  },
+  coursePage: {
+    label: 'Pagina cursului',
+    usage: 'course.ivconcept.ro',
+    description: 'Editezi pagina cursului: titlul, descrierea și titlul de deasupra formularului. Textul butonului și mesajul de după înscriere vin din Oferta cursului.',
+  },
+  legal: {
+    label: 'Date legale & cookies',
+    usage: 'Politica de confidențialitate',
+    description: 'Completezi datele firmei care apar ca operator în politica de confidențialitate: denumirea juridică, CUI, sediul și emailul de contact. Comutatorul „Afișează bannerul de cookies” controlează bannerul informativ. Când completezi codul de Google Analytics sau ID-ul de Meta Pixel, bannerul devine unul de consimțământ, cu Accept și Refuz, și se afișează oricum: fără acordul vizitatorului nu pornește nimic și nu se trimite nimic către Meta sau Google.',
   },
   products: {
     label: 'Categorii & Produse',
@@ -2656,6 +2668,11 @@ function NewsletterSubscribersPanel() {
   );
 }
 
+const COURSE_SUBSCRIBER_SOURCE_LABELS: Record<string, string> = {
+  'course-offer': 'Înscriere prin oferta cursului',
+  'course-page': 'Înscriere de pe pagina cursului',
+};
+
 function CourseSubscribersPanel() {
   const [subscribers, setSubscribers] = useState<CourseSubscriberRecord[] | null>(null);
   const [error, setError] = useState('');
@@ -2711,7 +2728,9 @@ function CourseSubscribersPanel() {
               <div>
                 <h3 className="text-lg font-semibold">{[subscriber.firstName, subscriber.lastName].filter(Boolean).join(' ') || subscriber.email}</h3>
                 <p className="mt-1 text-xs text-[#2c2218]/40">{formatInquiryDate(subscriber.createdAt)}</p>
-                {subscriber.source === 'course-offer' && <p className="mt-1 text-xs text-[#2c2218]/55">Înscriere prin oferta cursului</p>}
+                {COURSE_SUBSCRIBER_SOURCE_LABELS[subscriber.source] && (
+                  <p className="mt-1 text-xs text-[#2c2218]/55">{COURSE_SUBSCRIBER_SOURCE_LABELS[subscriber.source]}</p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full border border-green-800/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-green-800">GDPR acceptat</span>
@@ -3242,9 +3261,9 @@ export default function AdminApp() {
                       <span className="text-sm">Afișează oferta cursului</span>
                       <input type="checkbox" checked={draft.courseOffer.enabled} onChange={(event) => handleChange(['courseOffer', 'enabled'], event.target.checked)} className="h-4 w-4 accent-[#c5a880]" />
                     </label>
-                    {(['title', 'description', 'buttonText', 'successMessage'] as const).map((key) => (
+                    {(['title', 'description', 'buttonText', 'pageButtonText', 'successMessage'] as const).map((key) => (
                       <label key={key} className="block space-y-2">
-                        <span className={ADMIN_LABEL_CLASS}>{{ title: 'Titlul ofertei', description: 'Descrierea cursului', buttonText: 'Textul butonului', successMessage: 'Mesaj după înscriere' }[key]}</span>
+                        <span className={ADMIN_LABEL_CLASS}>{{ title: 'Titlul ofertei', description: 'Descrierea cursului', buttonText: 'Textul butonului de înscriere', pageButtonText: 'Textul butonului spre pagina cursului', successMessage: 'Mesaj după înscriere' }[key]}</span>
                         {key === 'description' || key === 'successMessage' ? (
                           <textarea value={draft.courseOffer[key]} onChange={(event) => handleChange(['courseOffer', key], event.target.value)} rows={4} className={ADMIN_TEXTAREA_CLASS} />
                         ) : (

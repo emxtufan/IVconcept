@@ -16,7 +16,8 @@ export function createPageHandler({ loadHtml, findCategory }: PageLoaders) {
   ) {
     try {
       const pathname = new URL(request.originalUrl || request.url || '/', 'http://localhost').pathname;
-      let metadata = getPageMetadata(pathname);
+      // The host decides whether the root belongs to the course subdomain.
+      let metadata = getPageMetadata(pathname, undefined, request.headers.host);
       let status = 200;
       if (/^\/produse(?:\/|$)/.test(pathname)) {
         const parts = pathname.split('/').filter(Boolean);

@@ -1,13 +1,16 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {loadSiteContent} from './data';
+import {getLegalRoute, isCourseRoute} from './routes';
 import {applyPageMetadata, getPageMetadata} from './seo';
 import './index.css';
 
 async function bootstrap() {
   const isAdminRoute = /^\/admin(?:\/|$)/.test(window.location.pathname);
   const isProductsRoute = /^\/produse(?:\/|$)/.test(window.location.pathname);
-  applyPageMetadata(getPageMetadata(window.location.pathname));
+  // The course page answers on /curs and on the root of the course subdomain.
+  const isCoursePageRoute = !isAdminRoute && isCourseRoute(window.location.hostname, window.location.pathname);
+  applyPageMetadata(getPageMetadata(window.location.pathname, undefined, window.location.hostname));
 
   if (isAdminRoute) {
     // Keep the admin panel out of the public bundle (it is dead weight for visitors).
@@ -16,6 +19,30 @@ async function bootstrap() {
       <StrictMode>
         <AdminApp />
       </StrictMode>,
+    );
+    return;
+  }
+
+  if (isCoursePageRoute) {
+    const [{default: CoursePage}] = await Promise.all([
+      import('./components/CoursePage.tsx'),
+      loadSiteContent(),
+    ]);
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode><CoursePage /></StrictMode>,
+    );
+    return;
+  }
+
+  const legalRoute = isAdminRoute ? null : getLegalRoute(window.location.pathname);
+
+  if (legalRoute) {
+    const [{default: LegalPage}] = await Promise.all([
+      import('./components/LegalPage.tsx'),
+      loadSiteContent(),
+    ]);
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode><LegalPage document={legalRoute} /></StrictMode>,
     );
     return;
   }

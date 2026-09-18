@@ -9,7 +9,24 @@
   },
   "routes": [
     {
-      "src": "/(produse(?:/.*)?|galerie-foto/?|admin(?:/.*)?)",
+      "src": "/curs/?",
+      "has": [{ "type": "host", "value": "www.ivconcept.ro" }],
+      "status": 308,
+      "headers": { "Location": "https://course.ivconcept.ro/" }
+    },
+    {
+      "src": "/curs/?",
+      "has": [{ "type": "host", "value": "ivconcept.ro" }],
+      "status": 308,
+      "headers": { "Location": "https://course.ivconcept.ro/" }
+    },
+    {
+      "src": "/",
+      "has": [{ "type": "host", "value": "course.ivconcept.ro" }],
+      "dest": "/api/page.ts"
+    },
+    {
+      "src": "/(produse(?:/.*)?|galerie-foto/?|curs/?|confidentialitate/?|termeni/?|admin(?:/.*)?)",
       "dest": "/api/page.ts"
     },
     {

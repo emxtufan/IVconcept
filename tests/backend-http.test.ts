@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test';
 import http from 'node:http';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { Readable } from 'node:stream';
 
 // This worker cannot use project credentials or send requests to a real service.
@@ -63,6 +63,19 @@ S3Client.prototype.send = (async (command: any) => {
   throw new Error(`Unexpected R2 operation in offline test: ${command.constructor.name}`);
 }) as any;
 
+// Meta requests are captured; every other request keeps using the real fetch.
+const originalFetch = globalThis.fetch;
+let metaRequests: Array<{ url: string; body: any }> = [];
+let metaStatus = 200;
+globalThis.fetch = (async (input: any, init?: any) => {
+  const url = typeof input === 'string' ? input : String(input?.url ?? input);
+  if (url.includes('graph.facebook.com')) {
+    metaRequests.push({ url, body: JSON.parse(String(init?.body ?? '{}')) });
+    return new Response(metaStatus === 200 ? '{"events_received":1}' : '{"error":{"message":"test-only failure"}}', { status: metaStatus });
+  }
+  return originalFetch(input, init);
+}) as typeof fetch;
+
 const { default: app } = await import('../server/index.js');
 let server: http.Server;
 let origin = '';
@@ -99,6 +112,111 @@ test('HTTP: course offer stores the supplied full name and phone and preserves f
   assert.equal(courseInsert?.first_name, 'Ana');
   assert.equal(courseInsert?.last_name, 'Test');
   assert.equal(courseInsert?.phone, '0712345678');
+});
+
+test('HTTP: the course page saves signups in the same list, tagged with its own source', async () => {
+  counters.clear();
+  courseInsert = undefined;
+  assert.equal((await post('/api/course-subscribers', {
+    firstName: '  Ion Vasile  ', phone: '0712 345 678',
+    email: 'Pagina@example.com', gdprAccepted: true, source: 'course-page',
+  })).status, 201);
+  assert.equal(courseInsert?.source, 'course-page');
+  assert.equal(courseInsert?.first_name, 'Ion Vasile');
+  assert.equal(courseInsert?.last_name, '');
+  assert.equal(courseInsert?.email, 'pagina@example.com');
+
+  // An unknown source still falls back to a full registration, last name included.
+  courseInsert = undefined;
+  assert.equal((await post('/api/course-subscribers', {
+    firstName: 'Ion', phone: '0712345678', email: 'other@example.com', gdprAccepted: true, source: 'landing-page',
+  })).status, 400);
+  assert.equal(courseInsert, undefined);
+});
+
+test('HTTP: a saved signup sends one Lead to Meta with the id the browser receives', async () => {
+  counters.clear();
+  metaRequests = [];
+  metaStatus = 200;
+  Object.assign(process.env, { META_PIXEL_ID: '1234567890', META_CAPI_ACCESS_TOKEN: 'test-capi-token' });
+  try {
+    const response = await post('/api/course-subscribers', {
+      firstName: 'Ana Popescu', phone: '0712 345 678', email: 'Ana@Example.com',
+      gdprAccepted: true, source: 'course-page', trackingConsent: true,
+      eventSourceUrl: 'https://course.ivconcept.ro/', fbp: 'fb.1.1700000000.123', fbc: 'fb.1.1700000000.abc',
+    });
+    assert.equal(response.status, 201);
+    const payload = await response.json() as { eventId?: string };
+    assert.ok(payload.eventId, 'The browser needs the id to deduplicate its own Lead event');
+    assert.equal(metaRequests.length, 1);
+
+    const [request] = metaRequests;
+    assert.equal(request.url, 'https://graph.facebook.com/v26.0/1234567890/events');
+    assert.doesNotMatch(request.url, /access_token/);
+    assert.equal(request.body.access_token, 'test-capi-token');
+
+    const event = request.body.data[0];
+    assert.equal(event.event_name, 'Lead');
+    assert.equal(event.event_id, payload.eventId, 'Browser and server share one event id');
+    assert.equal(event.action_source, 'website');
+    assert.equal(event.event_source_url, 'https://course.ivconcept.ro/');
+    assert.ok(Number.isInteger(event.event_time));
+    assert.equal(event.user_data.fbp, 'fb.1.1700000000.123');
+    assert.equal(event.user_data.fbc, 'fb.1.1700000000.abc');
+    assert.ok(event.user_data.client_ip_address, 'The request IP is forwarded');
+    assert.deepEqual(event.user_data.em, [createHash('sha256').update('ana@example.com').digest('hex')]);
+    assert.deepEqual(event.user_data.ph, [createHash('sha256').update('0712345678').digest('hex')]);
+    assert.doesNotMatch(JSON.stringify(request.body), /Ana@Example|0712 345 678/i);
+  } finally {
+    delete process.env.META_PIXEL_ID;
+    delete process.env.META_CAPI_ACCESS_TOKEN;
+  }
+});
+
+test('HTTP: no consent, an invalid form or a failing Meta API never affect the signup', async (context) => {
+  context.mock.method(console, 'error', () => undefined);
+  const valid = { firstName: 'Ana Popescu', phone: '0712345678', email: 'ana@example.com', gdprAccepted: true, source: 'course-page' };
+  Object.assign(process.env, { META_PIXEL_ID: '1234567890', META_CAPI_ACCESS_TOKEN: 'test-capi-token' });
+  try {
+    counters.clear();
+    metaRequests = [];
+    metaStatus = 200;
+
+    // A refused banner means nothing is reported, in the browser or on the server.
+    assert.equal((await post('/api/course-subscribers', { ...valid, trackingConsent: false })).status, 201);
+    assert.equal(metaRequests.length, 0);
+
+    // An invalid submission is never a Lead.
+    assert.equal((await post('/api/course-subscribers', { ...valid, email: 'invalid', trackingConsent: true })).status, 400);
+    assert.equal(metaRequests.length, 0);
+
+    // Meta rejecting the event must not lose the signup.
+    metaStatus = 500;
+    const failed = await post('/api/course-subscribers', { ...valid, trackingConsent: true });
+    assert.equal(failed.status, 201);
+    assert.ok((await failed.json() as { eventId?: string }).eventId);
+    assert.equal(metaRequests.length, 1);
+    assert.equal(courseInsert?.email, 'ana@example.com', 'The subscriber row is still written');
+  } finally {
+    metaStatus = 200;
+    delete process.env.META_PIXEL_ID;
+    delete process.env.META_CAPI_ACCESS_TOKEN;
+  }
+});
+
+test('HTTP: a missing Meta token leaves the signup working and sends nothing', async () => {
+  counters.clear();
+  metaRequests = [];
+  delete process.env.META_PIXEL_ID;
+  delete process.env.META_CAPI_ACCESS_TOKEN;
+
+  const response = await post('/api/course-subscribers', {
+    firstName: 'Ana Popescu', phone: '0712345678', email: 'ana@example.com',
+    gdprAccepted: true, source: 'course-page', trackingConsent: true,
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(metaRequests.length, 0);
 });
 
 test('HTTP: course offer requires name, phone, email and explicit consent', async () => {

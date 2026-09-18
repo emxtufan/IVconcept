@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { ProductCategoryRecord, ProductRecord } from '../types/products';
 import { getSiteContent } from '../data';
+import CookieConsent from './CookieConsent';
 import CourseOfferModal from './CourseOfferModal';
 import { applyPageMetadata, getPageMetadata } from '../seo';
 
@@ -138,6 +139,8 @@ export default function ProductCatalogPage() {
           </section>
         </>
       )}
+
+      <CookieConsent />
     </main>
   );
 }

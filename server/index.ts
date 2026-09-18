@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import multer from 'multer';
 import sharp from 'sharp';
 import servePage from '../api/page.js';
+import { createEventId, getMetaConversionsConfig, sendMetaLeadEvent } from './metaConversions.js';
 import { normalizeSiteContent, type SiteContent } from '../src/types/siteContent.js';
 import { getGalleryFolderPath, slugifyGalleryName, type GalleryRecord } from '../src/types/galleries.js';
 import { slugifyProductCategory } from '../src/types/products.js';
@@ -1450,6 +1451,54 @@ app.delete('/api/newsletter-subscriptions/:id', requireAdminSession, async (requ
   }
 });
 
+function readTrackingValue(value: unknown, maxLength: number) {
+  return typeof value === 'string' && value.trim() && value.length <= maxLength ? value.trim() : undefined;
+}
+
+/**
+ * The access token comes only from the environment. The pixel id may also be
+ * configured from the admin panel, so it is read from the site content when the
+ * environment does not provide one.
+ */
+async function resolveMetaConversionsConfig() {
+  const fromEnvironment = getMetaConversionsConfig();
+  if (fromEnvironment || !process.env.META_CAPI_ACCESS_TOKEN?.trim()) return fromEnvironment;
+
+  try {
+    const record = await getMainSiteContent();
+    const pixelId = record ? normalizeSiteContent(record.content as SiteContent).legal.metaPixelId : '';
+    return getMetaConversionsConfig(pixelId);
+  } catch (error) {
+    console.error('Meta pixel id unavailable from site content:', error instanceof Error ? error.message : 'Unknown error');
+    return null;
+  }
+}
+
+/** Never throws and never rejects: a Meta outage must not affect the signup. */
+async function sendCourseLeadToMeta(
+  request: express.Request,
+  lead: { email: string; phone: string; eventId: string },
+) {
+  try {
+    const config = await resolveMetaConversionsConfig();
+    if (!config) return;
+
+    await sendMetaLeadEvent({
+      eventId: lead.eventId,
+      email: lead.email,
+      phone: lead.phone,
+      // request.ip already follows the trust proxy setting configured above.
+      clientIpAddress: request.ip || request.socket.remoteAddress || undefined,
+      clientUserAgent: readTrackingValue(request.headers['user-agent'], 512),
+      eventSourceUrl: readTrackingValue(request.body?.eventSourceUrl, 1024),
+      fbp: readTrackingValue(request.body?.fbp, 256),
+      fbc: readTrackingValue(request.body?.fbc, 512),
+    }, config);
+  } catch (error) {
+    console.error('Meta Lead event could not be sent:', error instanceof Error ? error.message : 'Unknown error');
+  }
+}
+
 app.post('/api/course-subscribers', formRateLimit, async (request, response, next) => {
   try {
     if (!ensureSupabaseAdminConfigured(response)) return;
@@ -1458,8 +1507,11 @@ app.post('/api/course-subscribers', formRateLimit, async (request, response, nex
     const email = typeof request.body?.email === 'string' ? request.body.email.trim().toLowerCase() : '';
     const phone = typeof request.body?.phone === 'string' ? request.body.phone.trim() : '';
     const gdprAccepted = request.body?.gdprAccepted === true;
-    const source = request.body?.source === 'course-offer' ? 'course-offer' : 'registration';
-    if (!firstName || !phone || !email || !gdprAccepted || (source !== 'course-offer' && !lastName)) {
+    // Single-name signups come from the offer modal and from the course page;
+    // anything else is a full registration and still needs a last name.
+    const singleNameSources = ['course-offer', 'course-page'];
+    const source = singleNameSources.includes(request.body?.source) ? request.body.source as string : 'registration';
+    if (!firstName || !phone || !email || !gdprAccepted || (source === 'registration' && !lastName)) {
       response.status(400).json({ message: 'Completează toate câmpurile și acceptă acordul GDPR.' });
       return;
     }
@@ -1477,7 +1529,15 @@ app.post('/api/course-subscribers', formRateLimit, async (request, response, nex
       return;
     }
     await createCourseSubscriber({ firstName, lastName, email, phone, source });
-    response.status(201).json({ success: true, message: 'Înscrierea a fost înregistrată.' });
+
+    // Only a saved signup counts as a Lead. The id is shared with the browser
+    // pixel so Meta can deduplicate the two copies of the same event.
+    const eventId = createEventId();
+    if (request.body?.trackingConsent === true) {
+      await sendCourseLeadToMeta(request, { email, phone, eventId });
+    }
+
+    response.status(201).json({ success: true, message: 'Înscrierea a fost înregistrată.', eventId });
   } catch (error) {
     next(error);
   }
@@ -1710,7 +1770,7 @@ app.delete('/api/inquiries/:id', requireAdminSession, async (request, response, 
 });
 
 if (existsSync(distPath)) {
-  app.get(['/produse', '/produse/*', '/galerie-foto', '/admin', '/admin/*'], servePage);
+  app.get(['/produse', '/produse/*', '/galerie-foto', '/curs', '/confidentialitate', '/termeni', '/admin', '/admin/*'], servePage);
   app.use(express.static(distPath));
 
   app.get('*', (request, response, next) => {

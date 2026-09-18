@@ -6,7 +6,29 @@
     "imageUrl": "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80",
     "mobileImageUrl": "",
     "buttonText": "Mă înscriu la curs",
+    "pageButtonText": "Vezi cursul",
     "successMessage": "Înscrierea ta a fost înregistrată. Te vom contacta pe email cu oferta și detaliile cursului."
+  },
+  "coursePage": {
+    "title": "Cursul IV Concept de finisaje decorative",
+    "description": "Descoperă tehnicile din spatele finisajelor decorative IV Concept. Completează datele de contact pentru înscriere și te vom contacta cu oferta și detaliile cursului.",
+    "formTitle": "Înscrie-te la curs"
+  },
+  "legal": {
+    "legalEntityName": "",
+    "registrationNumber": "",
+    "address": "",
+    "contactEmail": "",
+    "retentionPeriod": "Păstrăm datele cât timp sunt necesare scopului pentru care le-ai transmis, apoi le ștergem. Poți cere ștergerea oricând.",
+    "lastUpdated": "",
+    "googleAnalyticsId": "",
+    "metaPixelId": "",
+    "showCookieBanner": true,
+    "cookieBannerText": "Folosim cookie-uri de analiză ca să înțelegem cum este folosit site-ul. Le activăm doar dacă ești de acord.",
+    "cookieAcceptText": "Accept",
+    "cookieRejectText": "Refuz",
+    "cookieNoticeText": "Folosim doar cookie-uri strict necesare pentru funcționarea site-ului. Nu te urmărim și nu folosim cookie-uri de publicitate.",
+    "cookieNoticeButtonText": "Am înțeles"
   },
   "hero": {
     "backgroundImage": "",

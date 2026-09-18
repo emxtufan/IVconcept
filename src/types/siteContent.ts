@@ -162,6 +162,7 @@ export interface CourseOfferContent {
   imageUrl: string;
   mobileImageUrl: string;
   buttonText: string;
+  pageButtonText: string;
   successMessage: string;
 }
 
@@ -172,6 +173,7 @@ export const DEFAULT_COURSE_OFFER: CourseOfferContent = {
   imageUrl: 'https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&w=1000&q=80',
   mobileImageUrl: '',
   buttonText: 'Mă înscriu la curs',
+  pageButtonText: 'Vezi cursul',
   successMessage: 'Înscrierea ta a fost înregistrată. Te vom contacta pe email cu oferta și detaliile cursului.',
 };
 
@@ -183,7 +185,91 @@ export function normalizeCourseOffer(content?: Partial<CourseOfferContent>): Cou
     imageUrl: typeof content?.imageUrl === 'string' && content.imageUrl.trim() ? content.imageUrl : DEFAULT_COURSE_OFFER.imageUrl,
     mobileImageUrl: typeof content?.mobileImageUrl === 'string' ? content.mobileImageUrl.trim() : '',
     buttonText: typeof content?.buttonText === 'string' ? content.buttonText : DEFAULT_COURSE_OFFER.buttonText,
+    pageButtonText: typeof content?.pageButtonText === 'string' ? content.pageButtonText : DEFAULT_COURSE_OFFER.pageButtonText,
     successMessage: typeof content?.successMessage === 'string' ? content.successMessage : DEFAULT_COURSE_OFFER.successMessage,
+  };
+}
+
+export interface CoursePageContent {
+  title: string;
+  description: string;
+  formTitle: string;
+}
+
+export const DEFAULT_COURSE_PAGE: CoursePageContent = {
+  title: 'Cursul IV Concept de finisaje decorative',
+  description: 'Descoperă tehnicile din spatele finisajelor decorative IV Concept. Completează datele de contact pentru înscriere și te vom contacta cu oferta și detaliile cursului.',
+  formTitle: 'Înscrie-te la curs',
+};
+
+export function normalizeCoursePage(content?: Partial<CoursePageContent>): CoursePageContent {
+  const text = (key: keyof CoursePageContent) =>
+    typeof content?.[key] === 'string' ? (content[key] as string) : DEFAULT_COURSE_PAGE[key];
+
+  return {
+    title: text('title'),
+    description: text('description'),
+    formTitle: text('formTitle'),
+  };
+}
+
+export interface LegalContent {
+  legalEntityName: string;
+  registrationNumber: string;
+  address: string;
+  contactEmail: string;
+  retentionPeriod: string;
+  lastUpdated: string;
+  googleAnalyticsId: string;
+  metaPixelId: string;
+  showCookieBanner: boolean;
+  cookieBannerText: string;
+  cookieAcceptText: string;
+  cookieRejectText: string;
+  cookieNoticeText: string;
+  cookieNoticeButtonText: string;
+}
+
+export const DEFAULT_LEGAL: LegalContent = {
+  // Left empty on purpose: the operator has to be identified with its real
+  // registered details, so the page falls back to the brand name until then.
+  legalEntityName: '',
+  registrationNumber: '',
+  address: '',
+  contactEmail: '',
+  retentionPeriod: 'Păstrăm datele cât timp sunt necesare scopului pentru care le-ai transmis, apoi le ștergem. Poți cere ștergerea oricând.',
+  lastUpdated: '',
+  googleAnalyticsId: '',
+  metaPixelId: '',
+  showCookieBanner: true,
+  cookieBannerText: 'Folosim cookie-uri de analiză ca să înțelegem cum este folosit site-ul. Le activăm doar dacă ești de acord.',
+  cookieAcceptText: 'Accept',
+  cookieRejectText: 'Refuz',
+  cookieNoticeText: 'Folosim doar cookie-uri strict necesare pentru funcționarea site-ului. Nu te urmărim și nu folosim cookie-uri de publicitate.',
+  cookieNoticeButtonText: 'Am înțeles',
+};
+
+type LegalTextKey = Exclude<keyof LegalContent, 'showCookieBanner'>;
+
+export function normalizeLegalContent(content?: Partial<LegalContent>): LegalContent {
+  const text = (key: LegalTextKey) =>
+    typeof content?.[key] === 'string' ? (content[key] as string).trim() : DEFAULT_LEGAL[key];
+
+  return {
+    legalEntityName: text('legalEntityName'),
+    registrationNumber: text('registrationNumber'),
+    address: text('address'),
+    contactEmail: text('contactEmail'),
+    retentionPeriod: text('retentionPeriod') || DEFAULT_LEGAL.retentionPeriod,
+    lastUpdated: text('lastUpdated'),
+    googleAnalyticsId: text('googleAnalyticsId'),
+    metaPixelId: text('metaPixelId'),
+    showCookieBanner: typeof content?.showCookieBanner === 'boolean' ? content.showCookieBanner : DEFAULT_LEGAL.showCookieBanner,
+    cookieBannerText: text('cookieBannerText') || DEFAULT_LEGAL.cookieBannerText,
+    cookieAcceptText: text('cookieAcceptText') || DEFAULT_LEGAL.cookieAcceptText,
+    cookieRejectText: text('cookieRejectText') || DEFAULT_LEGAL.cookieRejectText,
+    cookieNoticeText: text('cookieNoticeText') || DEFAULT_LEGAL.cookieNoticeText,
+    cookieNoticeButtonText: text('cookieNoticeButtonText') || DEFAULT_LEGAL.cookieNoticeButtonText,
   };
 }
 
@@ -216,6 +302,8 @@ export interface FooterContent {
 
 export interface SiteContent {
   courseOffer: CourseOfferContent;
+  coursePage: CoursePageContent;
+  legal: LegalContent;
   hero: HeroContent;
   about: AboutContent;
   imageSection: ImageSectionContent;
@@ -371,6 +459,8 @@ export function normalizeSiteContent(content: SiteContent): SiteContent {
   return {
     ...content,
     courseOffer: normalizeCourseOffer(content.courseOffer),
+    coursePage: normalizeCoursePage(content.coursePage),
+    legal: normalizeLegalContent(content.legal),
     hero: normalizeHeroContent(content.hero),
     logoSection: normalizeLogoSectionContent(content.logoSection, content.textSection),
     slidersSection: normalizeSlidersSectionContent(content.slidersSection),

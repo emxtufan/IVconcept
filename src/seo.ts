@@ -1,3 +1,5 @@
+import { COURSE_URL, getLegalRoute, isCourseRoute, LEGAL_PATHS, SITE_URL } from './routes';
+
 export interface PageMetadata {
   title: string;
   description: string;
@@ -6,12 +8,39 @@ export interface PageMetadata {
   image?: string;
 }
 
-const SITE_ORIGIN = 'https://www.ivconcept.ro';
-export function getPageMetadata(pathname: string, category?: { title: string; slug: string; image: string } | null): PageMetadata {
+const SITE_ORIGIN = SITE_URL;
+export function getPageMetadata(pathname: string, category?: { title: string; slug: string; image: string } | null, hostname?: string): PageMetadata {
   const path = pathname.replace(/\/+$/, '') || '/';
   const common = { canonical: `${SITE_ORIGIN}${path === '/' ? '' : path}`, robots: 'index, follow' };
   if (path === '/admin' || path.startsWith('/admin/')) {
     return { ...common, title: 'Administrare | IV Concept', description: 'Panoul de administrare IV Concept.', robots: 'noindex, nofollow' };
+  }
+  // The course subdomain is the single indexed address for the course, so /curs
+  // and course.ivconcept.ro share one canonical URL.
+  if (isCourseRoute(hostname, path)) {
+    return {
+      ...common,
+      canonical: COURSE_URL,
+      title: 'Curs de finisaje decorative | IV Concept',
+      description: 'Cursul IV Concept de finisaje decorative: ce înveți, cum se desfășoară și cum te înscrii. Completează formularul și te contactăm cu oferta și detaliile cursului.',
+    };
+  }
+  // The legal pages belong to the main site, whichever host serves them.
+  const legalRoute = getLegalRoute(path);
+  if (legalRoute) {
+    return legalRoute === 'privacy'
+      ? {
+          ...common,
+          canonical: `${SITE_ORIGIN}${LEGAL_PATHS.privacy}`,
+          title: 'Politica de confidențialitate | IV Concept',
+          description: 'Ce date personale colectăm prin formularele IV Concept, în ce scop, cât timp le păstrăm și ce drepturi ai asupra lor.',
+        }
+      : {
+          ...common,
+          canonical: `${SITE_ORIGIN}${LEGAL_PATHS.terms}`,
+          title: 'Termeni și condiții | IV Concept',
+          description: 'Condițiile de utilizare a site-ului IV Concept, regulile pentru oferte, comenzi, produse personalizate și înscrierea la curs.',
+        };
   }
   if (path === '/galerie-foto') {
     return { ...common, title: 'Galerie foto | IV Concept', description: 'Descoperă galeria proiectelor IV Concept: finisaje decorative, oglinzi și amenajări interioare.' };

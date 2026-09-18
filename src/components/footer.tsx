@@ -1,7 +1,9 @@
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getSiteContent } from '../data';
 import { useAccessibleDialog } from './useAccessibleDialog';
+import { CookieSettingsLink } from './CookieConsent';
+import { LegalLastUpdated, LegalSections, LEGAL_TITLES } from './legalContent';
 
 const SECTION_ANCHORS: Record<string, string> = {
   home: '#hero',
@@ -310,6 +312,7 @@ export default function Footer() {
                 >
                   {footerContent.termsText}
                 </button>
+                <CookieSettingsLink className="shrink-0 cursor-pointer whitespace-nowrap text-left transition hover:text-[#c9a277]" />
               </div>
             </div>
           </div>
@@ -328,53 +331,11 @@ export default function Footer() {
           <button type="button" onClick={() => setLegalModal(null)} aria-label="Închide" className="absolute right-5 top-4 text-3xl font-light">×</button>
           <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#9b744e]">IV Concept</span>
           <h2 id="legal-modal-title" className="mt-4 pr-10 font-display text-3xl font-light tracking-tight md:text-4xl">
-            {legalModal === 'privacy' ? 'Politica de confidențialitate' : 'Termeni și condiții'}
+            {LEGAL_TITLES[legalModal]}
           </h2>
-          <p className="mt-3 text-xs text-[#2c2218]/45">Ultima actualizare: 2026</p>
+          <LegalLastUpdated />
           <div className="mt-8 space-y-6 text-sm leading-7 text-[#2c2218]/70">
-            {legalModal === 'privacy' ? (
-              <>
-                <LegalSection title="1. Datele pe care le colectăm">
-                  Colectăm datele transmise voluntar prin formularele site-ului: nume, prenume, adresă de email, număr de telefon, detalii despre proiect, fotografii încărcate, înscrieri la cursuri și abonări la newsletter.
-                </LegalSection>
-                <LegalSection title="2. Scopul prelucrării">
-                  Folosim datele pentru a răspunde solicitărilor de ofertă, a analiza proiectele, a contacta persoanele interesate de cursuri, a transmite comunicări solicitate și a administra relația cu potențialii clienți.
-                </LegalSection>
-                <LegalSection title="3. Fotografii și fișiere">
-                  Fotografiile încărcate sunt utilizate exclusiv pentru evaluarea solicitării și pregătirea unei propuneri. Nu le publicăm și nu le folosim în portofoliu fără acord separat.
-                </LegalSection>
-                <LegalSection title="4. Stocare și destinatari">
-                  Datele sunt stocate prin furnizorii tehnici ai site-ului, inclusiv Supabase și Cloudflare R2. Accesul este limitat la persoanele care administrează solicitările IV Concept.
-                </LegalSection>
-                <LegalSection title="5. Drepturile tale">
-                  Poți solicita accesul, corectarea, ștergerea sau restricționarea datelor, retragerea consimțământului și, când este aplicabil, portabilitatea datelor. Retragerea consimțământului nu afectează prelucrarea realizată anterior.
-                </LegalSection>
-                <LegalSection title="6. Contact">
-                  Pentru întrebări sau solicitări privind datele personale, ne poți contacta la adresa {footerContent.email}.
-                </LegalSection>
-              </>
-            ) : (
-              <>
-                <LegalSection title="1. Utilizarea site-ului">
-                  Site-ul prezintă serviciile, proiectele, produsele și cursurile IV Concept. Informațiile au caracter general și pot fi actualizate fără notificare prealabilă.
-                </LegalSection>
-                <LegalSection title="2. Oferte și comenzi">
-                  Trimiterea unui formular nu reprezintă încheierea automată a unui contract. Prețul, dimensiunile, materialele, termenul și condițiile finale sunt confirmate individual printr-o ofertă acceptată de ambele părți.
-                </LegalSection>
-                <LegalSection title="3. Produse personalizate">
-                  Aspectul produselor realizate manual poate prezenta variații naturale de textură și nuanță. Pentru produsele executate pe dimensiuni sau specificații personalizate se aplică termenii comunicați în oferta individuală.
-                </LegalSection>
-                <LegalSection title="4. Proprietate intelectuală">
-                  Textele, imaginile, logo-ul, proiectele și materialele vizuale de pe site aparțin IV Concept sau sunt utilizate cu permisiune. Reproducerea sau utilizarea lor comercială fără acord scris este interzisă.
-                </LegalSection>
-                <LegalSection title="5. Răspundere">
-                  Depunem eforturi pentru ca informațiile să fie corecte și site-ul disponibil, însă nu garantăm funcționarea neîntreruptă și nu răspundem pentru probleme cauzate de servicii externe sau utilizarea necorespunzătoare a site-ului.
-                </LegalSection>
-                <LegalSection title="6. Legea aplicabilă">
-                  Acești termeni sunt guvernați de legislația din România. Eventualele neînțelegeri vor fi soluționate mai întâi pe cale amiabilă, iar apoi de instanțele competente.
-                </LegalSection>
-              </>
-            )}
+            <LegalSections document={legalModal} />
           </div>
         </article>
       </div>,
@@ -384,11 +345,3 @@ export default function Footer() {
   );
 }
 
-function LegalSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <h3 className="font-semibold text-[#2c2218]">{title}</h3>
-      <p className="mt-1">{children}</p>
-    </section>
-  );
-}

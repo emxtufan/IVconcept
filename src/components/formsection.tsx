@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SplitText from "./SplitText";
 import { uploadFilesWithProgress } from '../admin/uploadClient';
+import { getLegalHref } from '../routes';
 
 const initialForm = {
   name: '',
@@ -281,6 +282,18 @@ export default function FormSection() {
                 />
                 <span>Sunt de acord cu prelucrarea datelor personale și a fotografiilor încărcate pentru soluționarea solicitării de ofertă.</span>
               </label>
+              <p className="pl-7 text-xs leading-5 text-[#2c2218]/50">
+                Îți poți retrage acordul oricând. Detalii în{' '}
+                <a
+                  href={getLegalHref(typeof window === 'undefined' ? '' : window.location.hostname, 'privacy')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-b border-[#2c2218]/35 pb-0.5 font-semibold text-[#2c2218]/70"
+                >
+                  Politica de confidențialitate
+                </a>
+                .
+              </p>
               {errors.gdprAccepted && <span className="block text-xs text-red-500">{errors.gdprAccepted}</span>}
 
               {/* Success/Error message */}

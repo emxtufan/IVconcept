@@ -45,6 +45,7 @@ Fisiere importante:
 - `server/supabaseStore.ts` - operatii DB
 - `server/r2Storage.ts` - operatii R2
 - `src/admin/` - panoul de administrare
+- `src/routes.ts` - adresele paginii cursului, folosite si in browser, si pe server
 
 ## 3. Variabile de mediu
 
@@ -371,7 +372,7 @@ Daca dupa mult timp revii pe proiect, urmeaza ordinea:
 
 ## 16. Oferta de curs si actualizarile de securitate
 
-Oferta de curs apare automat la fiecare incarcare a unei pagini publice. Acelasi modal se deschide din butonul sectiunii de curs; in `/admin` nu apare automat. In editorul de continut poti modifica titlul, descrierea, fotografia, textul butonului, mesajul de succes si afisarea automata. Formularul cere nume, numar de telefon, email si acord pentru prelucrarea datelor, apoi salveaza inscrierea in `course_subscribers`, vizibila in **Abonati cursuri**. Numele complet este pastrat in campul existent `first_name`; aceste campuri de contact nu necesita o migrare noua. Nu trimite automat emailuri.
+Oferta de curs apare automat la fiecare incarcare a unei pagini publice. Acelasi modal se deschide din butonul sectiunii de curs; in `/admin` nu apare automat. Sub formular exista si butonul care duce la pagina cursului, descrisa in sectiunea 17. In editorul de continut poti modifica titlul, descrierea, fotografia, textul butonului de inscriere, textul butonului spre pagina cursului, mesajul de succes si afisarea automata. Formularul cere nume, numar de telefon, email si acord pentru prelucrarea datelor, apoi salveaza inscrierea in `course_subscribers`, vizibila in **Abonati cursuri**. Numele complet este pastrat in campul existent `first_name`; aceste campuri de contact nu necesita o migrare noua. Nu trimite automat emailuri.
 
 Continutul existent primeste implicit oferta fara reinitializarea bazei de date. **Nu rula `npm run db:seed` pe un site existent pentru aceasta actualizare:** comanda inlocuieste continutul editat.
 
@@ -406,5 +407,203 @@ Migrarea SQL este necesara pentru noile functii de limitare a cererilor si pentr
 - Anexele cererilor se citesc prin ruta de admin cu `no-store`. Stergerea elimina fisierele inaintea inregistrarii; daca storage-ul raspunde cu eroare, inregistrarea ramane pentru o noua incercare. Uploadurile private expirate sunt curatate la cereri ulterioare.
 - Redenumirea galeriilor copiaza fisierele si actualizeaza baza de date atomic inainte de eliminarea originalelor nefolosite. In caz de rezultat incert, copiile sunt pastrate pentru a evita pierderea fisierelor; orice curatare ulterioara trebuie sa verifice referintele.
 - `TRUST_PROXY_HOPS` este implicit `0`; seteaza-l numai conform numarului de proxy-uri de incredere din infrastructura. Vercel este tratat separat.
-- `npm test` foloseste servicii simulate si PostgreSQL in memorie prin PGlite. Nu citeste si nu modifica baza de date ori fisierele din productie. Acopera salvarea in admin, securitatea uploadurilor, rutele HTTP, migrarea SQL, oferta de curs si metadatele paginilor.
+- `npm test` foloseste servicii simulate si PostgreSQL in memorie prin PGlite. Nu citeste si nu modifica baza de date ori fisierele din productie. Acopera salvarea in admin, securitatea uploadurilor, rutele HTTP, migrarea SQL, oferta de curs, pagina cursului pe subdomeniu si metadatele paginilor.
 - Metadatele paginilor de produse, galerie si admin sunt livrate si in HTML-ul initial prin `api/page.ts`. Configuratia Vercel include explicit fisierele necesare functiei, conform [documentatiei Vercel](https://vercel.com/kb/guide/how-can-i-use-files-in-serverless-functions).
+
+## 17. Pagina cursului pe course.ivconcept.ro
+
+Pagina de prezentare a cursului face parte din aceeasi aplicatie, cu acelasi backend, acelasi proiect Supabase si acelasi panou de administrare. Nu exista un proiect separat si nu este nevoie de o migrare SQL noua: inscrierile ajung in tabelul existent `course_subscribers`, vizibil in **Abonati cursuri**, cu sursa `course-page`.
+
+### 17.1. Cum raspunde pagina
+
+Pagina raspunde la doua adrese:
+
+- `https://course.ivconcept.ro/` - adresa publica, folosita in butoane si in linkurile trimise mai departe
+- `/curs` - aceeasi pagina pe domeniul principal, folosita in dezvoltare locala si in deploy-urile de preview
+
+In productie, `https://www.ivconcept.ro/curs` si `https://ivconcept.ro/curs` redirectioneaza permanent (308) catre subdomeniu, iar canonical-ul paginii este mereu `https://course.ivconcept.ro`. Asa exista o singura adresa indexata, fara continut duplicat. Pe `localhost` si pe `*.vercel.app` butoanele duc la `/curs`, pentru ca subdomeniul nu exista acolo.
+
+Logica este intr-un singur loc, in `src/routes.ts`, folosita de bundle-ul din browser, de Express si de functia `api/page.ts`. Daca schimbi subdomeniul, il schimbi acolo si in `vercel.json`.
+
+### 17.2. Adaugarea domeniului in Vercel
+
+1. In proiectul din Vercel: `Settings` > `Domains` > `Add Domain`.
+2. Adauga `course.ivconcept.ro`.
+3. Vercel afiseaza inregistrarea `CNAME` de creat. Valoarea este unica pentru fiecare proiect, de forma `xxxxxxxx.vercel-dns-017.com`; foloseste exact valoarea afisata pentru acest proiect, nu una copiata din alta parte.
+4. La registrarul sau in DNS-ul domeniului `ivconcept.ro`, creeaza inregistrarea:
+
+```txt
+Tip:    CNAME
+Nume:   course
+Valoare: <valoarea afisata de Vercel>
+TTL:    automat / implicit
+```
+
+5. Asteapta propagarea si verifica in `Settings` > `Domains` ca domeniul apare configurat corect, cu certificat emis.
+
+Nu sunt necesare variabile de mediu noi si nu se schimba nimic la R2. Daca ai CORS configurat pe origini explicite in R2 (sectiunea 4.5), adauga si `https://course.ivconcept.ro` in `AllowedOrigins`, altfel imaginile incarcate din admin raman accesibile, dar uploadul testat de pe subdomeniu poate esua.
+
+### 17.3. Ce editezi din admin
+
+Pagina contine doar descrierea si formularul. In `/admin`, sectiunea **Pagina cursului** are trei campuri: titlul, descrierea si titlul de deasupra formularului. Descrierea pastreaza randurile goale, deci poti scrie mai multe paragrafe.
+
+Textul butonului de inscriere si mesajul afisat dupa trimitere vin din **Oferta cursului**, ca sa fie identice in modal si pe pagina.
+
+Formularul cere nume, telefon, email si acord GDPR, exact ca modalul, si salveaza in aceeasi lista. In **Abonati cursuri** fiecare inscriere arata de unde a venit: din oferta afisata pe site sau de pe pagina cursului.
+
+### 17.4. Activare pe un site existent
+
+Continutul existent primeste implicit pagina cursului la prima incarcare, fara reinitializarea bazei de date. **Nu rula `npm run db:seed` pe un site existent:** comanda inlocuieste continutul editat. Prima salvare din admin scrie noile campuri in `site_content`.
+
+## 18. Confidentialitate, GDPR si cookies
+
+Site-ul colecteaza date personale prin trei formulare: contact/oferta, newsletter si inscriere la curs. Fiecare cere bifa de acord, iar acordul se salveaza cu data si ora in Supabase.
+
+### 18.1. Politica de confidentialitate si termenii
+
+Textul este intr-un singur loc, `src/components/legalContent.tsx`, si este afisat in doua feluri:
+
+- ca modal, din footer-ul site-ului, ca inainte
+- ca pagini de sine statatoare: `/confidentialitate` si `/termeni`
+
+Paginile exista pentru ca au o adresa stabila, care poate fi trimisa mai departe si care functioneaza si de pe subdomeniul cursului. Canonical-ul lor ramane pe domeniul principal, indiferent de host.
+
+Sub bifa de acord din formularul de contact si din cel de inscriere la curs apare linkul catre politica, deschis intr-o fila noua ca sa nu piarda datele completate. Pe subdomeniul cursului linkul este absolut, catre `https://www.ivconcept.ro/confidentialitate`.
+
+### 18.2. Datele operatorului
+
+In `/admin`, sectiunea **Date legale & cookies** contine campurile care apar in politica: denumirea juridica, CUI, sediul, emailul de contact, perioada de pastrare a datelor si data ultimei actualizari. Cat timp sunt goale, politica foloseste numele de brand si adresa din footer.
+
+Completeaza-le: GDPR cere ca operatorul sa fie identificabil, iar o denumire de brand fara CUI si sediu nu este suficienta.
+
+### 18.3. Bannerul de cookies
+
+Site-ul are un singur cookie propriu, `iv_admin_session`, strict necesar pentru autentificarea in `/admin`. Cookie-urile strict necesare nu cer consimtamant.
+
+Bannerul are doua forme, iar forma este decisa de campul **Cod Google Analytics** din aceeasi sectiune de admin:
+
+**Fara cod de analytics** - banner informativ, cu un singur buton, `Am inteles`. Spune ca site-ul foloseste doar cookie-uri strict necesare, pentru ca asta se intampla. Il poti opri complet din comutatorul **Afiseaza bannerul de cookies**, care este pornit implicit.
+
+**Cu cod de analytics completat** - banner de consimtamant, cu `Refuz` si `Accept`. In aceasta forma se afiseaza intotdeauna, indiferent de comutator, pentru ca fara acord nu ai voie sa pornesti analytics. Comportamentul:
+
+- niciun script de analiza nu se incarca inainte de raspuns
+- `Refuz` este la fel de vizibil ca `Accept`, cum cere legea
+- raspunsul este retinut in browserul vizitatorului, iar pe pagina de confidentialitate apare un buton prin care si-l poate schimba
+- daca stergi codul din admin, analytics nu mai porneste si bannerul revine la forma informativa
+
+Textele ambelor forme sunt editabile in aceeasi sectiune.
+
+### 18.3.1. Ce se intampla dupa un refuz
+
+Un refuz nu blocheaza nimic: formularele functioneaza normal, inscrierea se salveaza si persoana ajunge in **Abonati cursuri**. Se pierde doar masurarea in Meta si Google, nu si lead-ul.
+
+Bannerul nu reapare de la sine dupa un raspuns si nu conditioneaza niciodata trimiterea unui formular - GDPR interzice explicit sa ceri consimtamant pentru marketing ca pret pentru un serviciu care nu are nevoie de el, iar reafisarea insistenta poate invalida chiar consimtamantul obtinut asa.
+
+Raspunsul poate fi schimbat in doua feluri, ambele legale:
+
+- linkul **Setari cookie-uri**, discret, in footer-ul site-ului, pe pagina cursului si pe paginile legale. Redeschide bannerul pe loc, fara reincarcarea paginii.
+- expirarea automata: raspunsul este pastrat cu data la care a fost dat si expira dupa sase luni, intervalul recomandat de autoritatile europene. Dupa acest termen bannerul intreaba o singura data din nou.
+
+### 18.4. De retinut
+
+Aceste texte sunt un punct de plecare scris cu bun-simt, nu consultanta juridica. Inainte de a te baza pe ele, pune-le in fata unui avocat sau a unui consultant GDPR, mai ales partea de perioada de pastrare si de temei legal. Daca adaugi alte servicii externe - un chat, un pixel de publicitate, un formular gazduit in alta parte - politica si bannerul trebuie actualizate.
+
+## 19. Meta Pixel si Conversions API pentru evenimentul Lead
+
+O inscriere la curs salvata cu succes este raportata catre Meta de doua ori, din browser prin Pixel si de pe server prin Conversions API, cu acelasi `event_id`, ca Meta sa deduplice perechea si sa numere un singur lead.
+
+### 19.1. Ce declanseaza evenimentul
+
+Doar o inscriere confirmata de backend. Nu se trimite nimic la click pe buton, la formular deschis, la validare picata, la request esuat sau daca randul nu a ajuns in `course_subscribers`.
+
+Fluxul complet:
+
+```txt
+Vizitatorul completeaza formularul
+        v
+POST /api/course-subscribers
+        v
+validare + insert in course_subscribers
+        v
+succes -> se genereaza event_id (randomUUID)
+        v
+server -> Meta CAPI: Lead (event_id)
+raspuns 201 { success, message, eventId }
+        v
+browser -> fbq('track','Lead',{},{ eventID })
+        v
+Meta deduplica dupa event_id
+```
+
+`event_id` este generat pe server, in `server/metaConversions.ts`, si trimis inapoi in raspunsul de succes. Browserul nu inventeaza niciodata un id propriu, deci cele doua copii ale evenimentului nu pot sa nu se potriveasca.
+
+### 19.2. Configurare
+
+```env
+META_PIXEL_ID=
+META_CAPI_ACCESS_TOKEN=
+META_GRAPH_VERSION=v26.0
+META_TEST_EVENT_CODE=
+```
+
+Adauga si `VITE_META_PIXEL_ID`, cu acelasi ID de pixel:
+
+```env
+VITE_META_PIXEL_ID=
+```
+
+`META_CAPI_ACCESS_TOKEN` este secret si ramane doar pe server: nu ajunge niciodata in bundle-ul din browser, in URL-uri sau in loguri. Adauga variabilele local in `.env` si in Vercel, in `Settings` > `Environment Variables`.
+
+ID-ul de pixel are trei surse, in aceasta ordine:
+
+- browserul: `VITE_META_PIXEL_ID`, citit la build, si daca lipseste campul **Meta Pixel Id** din `/admin` > **Date legale & cookies**
+- serverul: `META_PIXEL_ID`, si daca lipseste tot campul din admin
+
+`VITE_*` este singurul prefix pe care Vite il trimite in bundle si se citeste la build, deci o schimbare a ID-ului cere un redeploy. Campul din admin se schimba fara redeploy. ID-ul de pixel este o valoare publica prin natura ei; secret este doar tokenul.
+
+### 19.2.1. Unde ruleaza codul de baza
+
+Codul de baza al pixelului - `init` plus `PageView` - este incarcat de componenta `CookieConsent`, prezenta pe toate paginile publice: homepage, galeria foto, paginile de produse, pagina cursului de pe subdomeniu si paginile legale. Nu ruleaza in `/admin`, unde nu are ce cauta.
+
+Nu este pus ca script in `index.html`, pentru ca acolo ar porni inaintea raspunsului la bannerul de cookies si ar scrie `_fbp` fara acord. `<noscript>`-ul din snippetul standard lipseste din acelasi motiv: nu poate fi conditionat de consimtamant, iar site-ul oricum nu functioneaza fara JavaScript.
+
+`META_TEST_EVENT_CODE` se foloseste numai cat verifici in `Events Manager`; lasa-l gol in productie.
+
+### 19.3. Datele trimise si hashuirea
+
+Evenimentul server-side contine `event_name: "Lead"`, `event_time`, `event_id`, `action_source: "website"`, `event_source_url` si `user_data`.
+
+In `user_data` ajung, cand exista:
+
+- `em` - emailul, trimmed, lowercase, apoi SHA-256
+- `ph` - telefonul redus la cifre, apoi SHA-256
+- `client_ip_address` - IP-ul real al vizitatorului, luat din `request.ip`, care respecta configurarea `trust proxy` existenta
+- `client_user_agent`, `fbp`, `fbc` - trimise ca atare
+
+IP-ul, User-Agent-ul, `_fbp` si `_fbc` nu se hashuiesc. `_fbp` si `_fbc` sunt citite din cookie-urile setate de Pixel si trimise catre backend impreuna cu formularul; daca lipsesc, campurile sunt omise si nu se inventeaza nimic.
+
+Endpoint: `https://graph.facebook.com/<versiune>/<pixel_id>/events`, cu tokenul in corpul cererii, nu in URL.
+
+### 19.4. Consimtamant
+
+Tracking-ul respecta bannerul existent, descris in sectiunea 18.3. Cu un ID de pixel configurat, bannerul cere acord explicit. Pixelul se incarca doar dupa `Accept`, iar formularul trimite catre backend `trackingConsent`. La refuz nu se incarca Pixel, nu se citesc cookie-urile Meta si serverul nu trimite nimic catre Conversions API.
+
+### 19.5. Erori
+
+Tracking-ul este secundar inscrierii. Daca Meta raspunde cu eroare sau nu raspunde deloc, cererea are timeout de 3 secunde, eroarea este logata pe server fara date personale, inscrierea ramane salvata si vizitatorul primeste acelasi mesaj de succes. Fara token configurat nu se incearca niciun apel.
+
+### 19.6. Testare in Meta Events Manager
+
+1. Completeaza `META_PIXEL_ID` si `META_CAPI_ACCESS_TOKEN`, si ID-ul de pixel in `/admin`.
+2. In `Events Manager` > `Test Events` copiaza codul afisat si pune-l in `META_TEST_EVENT_CODE`, apoi redeployeaza.
+3. Deschide `https://course.ivconcept.ro/`, accepta bannerul de cookie-uri si trimite o inscriere de test.
+4. In `Test Events` trebuie sa apara doua intrari `Lead`, una `Browser` si una `Server`, marcate ca deduplicate dupa acelasi `event_id`.
+5. Sterge inscrierea de test din `/admin` > **Abonati cursuri** si goleste `META_TEST_EVENT_CODE` cand ai terminat.
+
+Verificari locale:
+
+```bash
+npm run lint
+npm test
+npm run build
+```
