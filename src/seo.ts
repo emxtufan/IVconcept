@@ -1,4 +1,6 @@
-import { COURSE_URL, getLegalRoute, isCourseRoute, LEGAL_PATHS, SITE_URL } from './routes';
+// The `.js` extension is required: this module is also loaded by the Vercel
+// function, where Node's ESM resolver does not guess extensions.
+import { COURSE_URL, getLegalRoute, isCourseRoute, LEGAL_PATHS, SITE_URL } from './routes.js';
 
 export interface PageMetadata {
   title: string;
