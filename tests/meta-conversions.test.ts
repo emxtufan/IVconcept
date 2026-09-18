@@ -10,7 +10,6 @@ import {
   hashPhone,
   sendMetaLeadEvent,
 } from '../server/metaConversions.ts';
-import { ANSWER_MAX_AGE_MS, parseStoredAnswer, serializeAnswer } from '../src/components/cookieConsentStorage.ts';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 const config = { pixelId: '1234567890', accessToken: 'test-token', graphVersion: 'v26.0' };
@@ -140,27 +139,4 @@ test('a rejected or unreachable Meta API never throws into the signup', async (c
     throw new Error('network unreachable');
   }) as typeof fetch);
   assert.equal(offline, false);
-});
-
-test('a stored answer expires after six months, so the banner asks once more', () => {
-  const now = Date.UTC(2026, 8, 18);
-  const day = 24 * 60 * 60 * 1000;
-
-  assert.equal(parseStoredAnswer(serializeAnswer('rejected', now - 10 * day), now), 'rejected');
-  assert.equal(parseStoredAnswer(serializeAnswer('accepted', now - 182 * day), now), 'accepted');
-  assert.equal(parseStoredAnswer(serializeAnswer('rejected', now - 200 * day), now), null, 'An old refusal is asked again');
-  assert.equal(parseStoredAnswer(serializeAnswer('accepted', now - 200 * day), now), null, 'An old acceptance is asked again');
-  assert.equal(ANSWER_MAX_AGE_MS, 183 * day);
-});
-
-test('unreadable, missing and legacy answers never turn into a false acceptance', () => {
-  assert.equal(parseStoredAnswer(null), null);
-  assert.equal(parseStoredAnswer(''), null);
-  assert.equal(parseStoredAnswer('not json'), null);
-  assert.equal(parseStoredAnswer('{"choice":"maybe"}'), null);
-  assert.equal(parseStoredAnswer('{}'), null);
-  // Values written before the expiry existed stay valid.
-  assert.equal(parseStoredAnswer('accepted'), 'accepted');
-  assert.equal(parseStoredAnswer('rejected'), 'rejected');
-  assert.equal(parseStoredAnswer('seen'), 'seen');
 });

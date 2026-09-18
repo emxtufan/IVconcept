@@ -22,7 +22,6 @@ import { getSiteContent } from './data';
 import BlurText from './components/BlurText';
 import FormSection from './components/formsection';
 import CourseOfferModal from './components/CourseOfferModal';
-import CookieConsent from './components/CookieConsent';
 
 function getSameOriginWebglImageUrl(value: string) {
   if (!value.trim()) return '';
@@ -164,7 +163,6 @@ export default function App() {
       <Suspense fallback={<div className="min-h-screen bg-[#e8e0d6]" />}>
         <GalleryWallPage />
       </Suspense>
-      <CookieConsent />
       </>
     );
   }
@@ -350,7 +348,6 @@ export default function App() {
 
       <Footer />
 
-      <CookieConsent />
     </div>  
   );
 }

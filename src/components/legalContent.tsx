@@ -71,11 +71,11 @@ function PrivacySections() {
       <LegalSection title="6. Cine mai are acces">
         Datele sunt găzduite la furnizorii tehnici ai site-ului: Supabase (baza de date), Cloudflare R2 (fișiere) și Vercel
         (găzduirea aplicației). Aceștia prelucrează datele doar pentru a ne furniza serviciul, pe baza unor contracte de
-        prelucrare. Nu vindem datele și nu le transmitem altcuiva în scopuri de marketing.
+        prelucrare.{operator.trackingEnabled ? ' Pentru măsurarea campaniilor, o formă criptată ireversibil a emailului și a numărului de telefon ajunge și la Meta Platforms Ireland Limited, care poate transfera date și în afara Uniunii Europene, pe baza clauzelor contractuale standard.' : ''} Nu vindem datele.
       </LegalSection>
       <LegalSection title="7. Cookie-uri">
         {operator.trackingEnabled
-          ? 'Folosim un cookie strict necesar pentru autentificarea în panoul de administrare. Cookie-urile de analiză și de măsurare a campaniilor, inclusiv cele Meta, sunt activate numai dacă le accepți din bannerul afișat la prima vizită și le poți refuza fără să pierzi accesul la site. Dacă le refuzi, nu transmitem nimic despre tine către Meta sau Google, nici din browser, nici de pe server.'
+          ? 'Site-ul folosește un cookie strict necesar pentru autentificarea în panoul de administrare și instrumente de măsurare a campaniilor, printre care Meta Pixel, care plasează cookie-uri proprii în browserul tău. Când trimiți formularul de înscriere, transmitem către Meta și o formă criptată ireversibil (hash) a emailului și a numărului de telefon, ca să putem măsura rezultatele campaniilor. Poți bloca aceste cookie-uri din setările browserului sau dintr-o extensie de blocare, iar preferințele de publicitate le poți schimba direct din contul tău Meta. Blocarea lor nu afectează în niciun fel folosirea site-ului.'
           : 'Site-ul folosește un singur cookie, strict necesar pentru autentificarea în panoul de administrare. Nu folosim cookie-uri de analiză sau de publicitate și nu te urmărim pe alte site-uri.'}
       </LegalSection>
       <LegalSection title="8. Drepturile tale">

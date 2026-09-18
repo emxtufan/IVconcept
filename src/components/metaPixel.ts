@@ -17,10 +17,7 @@ export function resolveMetaPixelId(adminPixelId?: string) {
 
 let loadedPixelId = '';
 
-/**
- * Standard Meta Pixel base code. It is only called after the visitor accepts
- * the cookie banner, because the pixel stores `_fbp` in the browser.
- */
+/** Standard Meta Pixel base code: init plus the PageView event. */
 export function loadMetaPixel(pixelId: string) {
   if (!pixelId || loadedPixelId === pixelId || typeof window === 'undefined') return;
   loadedPixelId = pixelId;
@@ -47,6 +44,37 @@ export function loadMetaPixel(pixelId: string) {
 
   metaWindow.fbq!('init', pixelId);
   metaWindow.fbq!('track', 'PageView');
+}
+
+let analyticsLoaded = false;
+
+/** Google Analytics, when a measurement id is configured in the admin panel. */
+export function loadGoogleAnalytics(measurementId: string) {
+  if (analyticsLoaded || !measurementId || typeof window === 'undefined') return;
+  analyticsLoaded = true;
+
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+  document.head.append(script);
+
+  const globalWindow = window as unknown as { dataLayer?: unknown[] };
+  globalWindow.dataLayer = globalWindow.dataLayer || [];
+  function gtag(...args: unknown[]) {
+    globalWindow.dataLayer!.push(args);
+  }
+  gtag('js', new Date());
+  gtag('config', measurementId, { anonymize_ip: true });
+}
+
+/**
+ * Starts every configured measurement tag. Called once on every public page,
+ * as soon as the site content is available; the admin panel is left out.
+ */
+export function startTracking(legal: { googleAnalyticsId?: string; metaPixelId?: string }) {
+  const pixelId = resolveMetaPixelId(legal.metaPixelId);
+  if (pixelId) loadMetaPixel(pixelId);
+  if (legal.googleAnalyticsId) loadGoogleAnalytics(legal.googleAnalyticsId);
 }
 
 /**

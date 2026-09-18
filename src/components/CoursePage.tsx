@@ -1,6 +1,5 @@
 import { getSiteContent } from '../data';
 import { getHomeHref, getLegalHref } from '../routes';
-import CookieConsent, { CookieSettingsLink } from './CookieConsent';
 import CourseSignupForm from './CourseSignupForm';
 
 export default function CoursePage() {
@@ -49,13 +48,11 @@ export default function CoursePage() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <a href={getLegalHref(hostname, 'privacy')} className="text-[#2c2218]/70">Politica de confidențialitate</a>
             <a href={getLegalHref(hostname, 'terms')} className="text-[#2c2218]/70">Termeni și condiții</a>
-            <CookieSettingsLink className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2c2218]/70" />
             <a href={homeHref} className="text-[#2c2218]/70">Vezi întregul site →</a>
           </div>
         </div>
       </footer>
 
-      <CookieConsent />
     </main>
   );
 }

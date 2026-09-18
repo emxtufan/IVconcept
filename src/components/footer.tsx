@@ -2,7 +2,6 @@ import { type FormEvent, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getSiteContent } from '../data';
 import { useAccessibleDialog } from './useAccessibleDialog';
-import { CookieSettingsLink } from './CookieConsent';
 import { LegalLastUpdated, LegalSections, LEGAL_TITLES } from './legalContent';
 
 const SECTION_ANCHORS: Record<string, string> = {
@@ -312,7 +311,6 @@ export default function Footer() {
                 >
                   {footerContent.termsText}
                 </button>
-                <CookieSettingsLink className="shrink-0 cursor-pointer whitespace-nowrap text-left transition hover:text-[#c9a277]" />
               </div>
             </div>
           </div>

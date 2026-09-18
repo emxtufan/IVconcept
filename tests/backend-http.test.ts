@@ -142,7 +142,7 @@ test('HTTP: a saved signup sends one Lead to Meta with the id the browser receiv
   try {
     const response = await post('/api/course-subscribers', {
       firstName: 'Ana Popescu', phone: '0712 345 678', email: 'Ana@Example.com',
-      gdprAccepted: true, source: 'course-page', trackingConsent: true,
+      gdprAccepted: true, source: 'course-page',
       eventSourceUrl: 'https://course.ivconcept.ro/', fbp: 'fb.1.1700000000.123', fbc: 'fb.1.1700000000.abc',
     });
     assert.equal(response.status, 201);
@@ -173,7 +173,7 @@ test('HTTP: a saved signup sends one Lead to Meta with the id the browser receiv
   }
 });
 
-test('HTTP: no consent, an invalid form or a failing Meta API never affect the signup', async (context) => {
+test('HTTP: an invalid form or a failing Meta API never affect the signup', async (context) => {
   context.mock.method(console, 'error', () => undefined);
   const valid = { firstName: 'Ana Popescu', phone: '0712345678', email: 'ana@example.com', gdprAccepted: true, source: 'course-page' };
   Object.assign(process.env, { META_PIXEL_ID: '1234567890', META_CAPI_ACCESS_TOKEN: 'test-capi-token' });
@@ -182,17 +182,13 @@ test('HTTP: no consent, an invalid form or a failing Meta API never affect the s
     metaRequests = [];
     metaStatus = 200;
 
-    // A refused banner means nothing is reported, in the browser or on the server.
-    assert.equal((await post('/api/course-subscribers', { ...valid, trackingConsent: false })).status, 201);
-    assert.equal(metaRequests.length, 0);
-
     // An invalid submission is never a Lead.
-    assert.equal((await post('/api/course-subscribers', { ...valid, email: 'invalid', trackingConsent: true })).status, 400);
+    assert.equal((await post('/api/course-subscribers', { ...valid, email: 'invalid' })).status, 400);
     assert.equal(metaRequests.length, 0);
 
     // Meta rejecting the event must not lose the signup.
     metaStatus = 500;
-    const failed = await post('/api/course-subscribers', { ...valid, trackingConsent: true });
+    const failed = await post('/api/course-subscribers', valid);
     assert.equal(failed.status, 201);
     assert.ok((await failed.json() as { eventId?: string }).eventId);
     assert.equal(metaRequests.length, 1);
@@ -212,7 +208,7 @@ test('HTTP: a missing Meta token leaves the signup working and sends nothing', a
 
   const response = await post('/api/course-subscribers', {
     firstName: 'Ana Popescu', phone: '0712345678', email: 'ana@example.com',
-    gdprAccepted: true, source: 'course-page', trackingConsent: true,
+    gdprAccepted: true, source: 'course-page',
   });
 
   assert.equal(response.status, 201);

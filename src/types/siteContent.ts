@@ -222,12 +222,6 @@ export interface LegalContent {
   lastUpdated: string;
   googleAnalyticsId: string;
   metaPixelId: string;
-  showCookieBanner: boolean;
-  cookieBannerText: string;
-  cookieAcceptText: string;
-  cookieRejectText: string;
-  cookieNoticeText: string;
-  cookieNoticeButtonText: string;
 }
 
 export const DEFAULT_LEGAL: LegalContent = {
@@ -241,18 +235,10 @@ export const DEFAULT_LEGAL: LegalContent = {
   lastUpdated: '',
   googleAnalyticsId: '',
   metaPixelId: '',
-  showCookieBanner: true,
-  cookieBannerText: 'Folosim cookie-uri de analiză ca să înțelegem cum este folosit site-ul. Le activăm doar dacă ești de acord.',
-  cookieAcceptText: 'Accept',
-  cookieRejectText: 'Refuz',
-  cookieNoticeText: 'Folosim doar cookie-uri strict necesare pentru funcționarea site-ului. Nu te urmărim și nu folosim cookie-uri de publicitate.',
-  cookieNoticeButtonText: 'Am înțeles',
 };
 
-type LegalTextKey = Exclude<keyof LegalContent, 'showCookieBanner'>;
-
 export function normalizeLegalContent(content?: Partial<LegalContent>): LegalContent {
-  const text = (key: LegalTextKey) =>
+  const text = (key: keyof LegalContent) =>
     typeof content?.[key] === 'string' ? (content[key] as string).trim() : DEFAULT_LEGAL[key];
 
   return {
@@ -264,12 +250,6 @@ export function normalizeLegalContent(content?: Partial<LegalContent>): LegalCon
     lastUpdated: text('lastUpdated'),
     googleAnalyticsId: text('googleAnalyticsId'),
     metaPixelId: text('metaPixelId'),
-    showCookieBanner: typeof content?.showCookieBanner === 'boolean' ? content.showCookieBanner : DEFAULT_LEGAL.showCookieBanner,
-    cookieBannerText: text('cookieBannerText') || DEFAULT_LEGAL.cookieBannerText,
-    cookieAcceptText: text('cookieAcceptText') || DEFAULT_LEGAL.cookieAcceptText,
-    cookieRejectText: text('cookieRejectText') || DEFAULT_LEGAL.cookieRejectText,
-    cookieNoticeText: text('cookieNoticeText') || DEFAULT_LEGAL.cookieNoticeText,
-    cookieNoticeButtonText: text('cookieNoticeButtonText') || DEFAULT_LEGAL.cookieNoticeButtonText,
   };
 }
 

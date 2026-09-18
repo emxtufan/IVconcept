@@ -1,7 +1,8 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import {loadSiteContent} from './data';
+import {getSiteContent, loadSiteContent} from './data';
 import {getLegalRoute, isCourseRoute} from './routes';
+import {startTracking} from './components/metaPixel';
 import {applyPageMetadata, getPageMetadata} from './seo';
 import './index.css';
 
@@ -28,6 +29,7 @@ async function bootstrap() {
       import('./components/CoursePage.tsx'),
       loadSiteContent(),
     ]);
+    startTracking(getSiteContent().legal);
     createRoot(document.getElementById('root')!).render(
       <StrictMode><CoursePage /></StrictMode>,
     );
@@ -41,6 +43,7 @@ async function bootstrap() {
       import('./components/LegalPage.tsx'),
       loadSiteContent(),
     ]);
+    startTracking(getSiteContent().legal);
     createRoot(document.getElementById('root')!).render(
       <StrictMode><LegalPage document={legalRoute} /></StrictMode>,
     );
@@ -52,6 +55,7 @@ async function bootstrap() {
       import('./components/ProductCatalogPage.tsx'),
       loadSiteContent(),
     ]);
+    startTracking(getSiteContent().legal);
     createRoot(document.getElementById('root')!).render(
       <StrictMode><ProductCatalogPage /></StrictMode>,
     );
@@ -60,6 +64,7 @@ async function bootstrap() {
 
   const [{default: App}] = await Promise.all([import('./App.tsx'), loadSiteContent()]);
 
+  startTracking(getSiteContent().legal);
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />

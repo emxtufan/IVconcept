@@ -2322,7 +2322,7 @@ const ADMIN_SECTION_META: Record<AdminSectionKey, AdminSectionMeta> = {
   legal: {
     label: 'Date legale & cookies',
     usage: 'Politica de confidențialitate',
-    description: 'Completezi datele firmei care apar ca operator în politica de confidențialitate: denumirea juridică, CUI, sediul și emailul de contact. Comutatorul „Afișează bannerul de cookies” controlează bannerul informativ. Când completezi codul de Google Analytics sau ID-ul de Meta Pixel, bannerul devine unul de consimțământ, cu Accept și Refuz, și se afișează oricum: fără acordul vizitatorului nu pornește nimic și nu se trimite nimic către Meta sau Google.',
+    description: 'Completezi datele firmei care apar ca operator în politica de confidențialitate: denumirea juridică, CUI, sediul și emailul de contact. Tot aici pui ID-ul de Meta Pixel și codul de Google Analytics. Ele pornesc direct la încărcarea fiecărei pagini publice, fără banner de cookie-uri; dacă golești câmpurile, tracking-ul se oprește. Textul politicii de confidențialitate se adaptează automat la ce este configurat.',
   },
   products: {
     label: 'Categorii & Produse',

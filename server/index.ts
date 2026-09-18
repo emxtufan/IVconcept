@@ -1533,9 +1533,7 @@ app.post('/api/course-subscribers', formRateLimit, async (request, response, nex
     // Only a saved signup counts as a Lead. The id is shared with the browser
     // pixel so Meta can deduplicate the two copies of the same event.
     const eventId = createEventId();
-    if (request.body?.trackingConsent === true) {
-      await sendCourseLeadToMeta(request, { email, phone, eventId });
-    }
+    await sendCourseLeadToMeta(request, { email, phone, eventId });
 
     response.status(201).json({ success: true, message: 'Înscrierea a fost înregistrată.', eventId });
   } catch (error) {

@@ -476,33 +476,21 @@ In `/admin`, sectiunea **Date legale & cookies** contine campurile care apar in 
 
 Completeaza-le: GDPR cere ca operatorul sa fie identificabil, iar o denumire de brand fara CUI si sediu nu este suficienta.
 
-### 18.3. Bannerul de cookies
+### 18.3. Cookie-uri si tracking
 
-Site-ul are un singur cookie propriu, `iv_admin_session`, strict necesar pentru autentificarea in `/admin`. Cookie-urile strict necesare nu cer consimtamant.
+Site-ul nu are banner de cookie-uri. Instrumentele de masurare pornesc direct, la incarcarea fiecarei pagini publice, asa cum a fost cerut.
 
-Bannerul are doua forme, iar forma este decisa de campul **Cod Google Analytics** din aceeasi sectiune de admin:
+Cookie-urile folosite:
 
-**Fara cod de analytics** - banner informativ, cu un singur buton, `Am inteles`. Spune ca site-ul foloseste doar cookie-uri strict necesare, pentru ca asta se intampla. Il poti opri complet din comutatorul **Afiseaza bannerul de cookies**, care este pornit implicit.
+- `iv_admin_session` - strict necesar, pentru autentificarea in `/admin`
+- cookie-urile Meta Pixel (`_fbp`, `_fbc`) - plasate de pixel, daca **Meta Pixel Id** este configurat
+- cookie-urile Google Analytics - doar daca este completat codul GA
 
-**Cu cod de analytics completat** - banner de consimtamant, cu `Refuz` si `Accept`. In aceasta forma se afiseaza intotdeauna, indiferent de comutator, pentru ca fara acord nu ai voie sa pornesti analytics. Comportamentul:
+Tracking-ul se opreste golind campurile din `/admin` > **Date legale & cookies** si, pentru pixel, variabila `VITE_META_PIXEL_ID`. Fara ele nu se incarca niciun script extern.
 
-- niciun script de analiza nu se incarca inainte de raspuns
-- `Refuz` este la fel de vizibil ca `Accept`, cum cere legea
-- raspunsul este retinut in browserul vizitatorului, iar pe pagina de confidentialitate apare un buton prin care si-l poate schimba
-- daca stergi codul din admin, analytics nu mai porneste si bannerul revine la forma informativa
+Textul politicii de confidentialitate se adapteaza singur: cand un ID de tracking este configurat, sectiunea despre cookie-uri spune ca sunt folosite cookie-uri de masurare, ca o forma criptata a emailului si a telefonului ajunge la Meta si cum pot fi blocate din browser. Daca golesti campurile, textul revine la varianta „doar cookie-uri strict necesare”. **Nu modifica manual acest text ca sa spuna altceva decat se intampla** - o politica de confidentialitate care nu corespunde realitatii este mai rea decat lipsa ei.
 
-Textele ambelor forme sunt editabile in aceeasi sectiune.
-
-### 18.3.1. Ce se intampla dupa un refuz
-
-Un refuz nu blocheaza nimic: formularele functioneaza normal, inscrierea se salveaza si persoana ajunge in **Abonati cursuri**. Se pierde doar masurarea in Meta si Google, nu si lead-ul.
-
-Bannerul nu reapare de la sine dupa un raspuns si nu conditioneaza niciodata trimiterea unui formular - GDPR interzice explicit sa ceri consimtamant pentru marketing ca pret pentru un serviciu care nu are nevoie de el, iar reafisarea insistenta poate invalida chiar consimtamantul obtinut asa.
-
-Raspunsul poate fi schimbat in doua feluri, ambele legale:
-
-- linkul **Setari cookie-uri**, discret, in footer-ul site-ului, pe pagina cursului si pe paginile legale. Redeschide bannerul pe loc, fara reincarcarea paginii.
-- expirarea automata: raspunsul este pastrat cu data la care a fost dat si expira dupa sase luni, intervalul recomandat de autoritatile europene. Dupa acest termen bannerul intreaba o singura data din nou.
+De stiut: in Uniunea Europeana, cookie-urile de masurare si de publicitate cer in mod normal consimtamant prealabil, iar termenii Meta cer acelasi lucru pentru traficul european. Configuratia actuala este o decizie asumata a proprietarului site-ului. Daca vrei sa revii la varianta cu acord, istoricul git contine implementarea completa a bannerului.
 
 ### 18.4. De retinut
 
@@ -584,9 +572,9 @@ IP-ul, User-Agent-ul, `_fbp` si `_fbc` nu se hashuiesc. `_fbp` si `_fbc` sunt ci
 
 Endpoint: `https://graph.facebook.com/<versiune>/<pixel_id>/events`, cu tokenul in corpul cererii, nu in URL.
 
-### 19.4. Consimtamant
+### 19.4. Cand porneste
 
-Tracking-ul respecta bannerul existent, descris in sectiunea 18.3. Cu un ID de pixel configurat, bannerul cere acord explicit. Pixelul se incarca doar dupa `Accept`, iar formularul trimite catre backend `trackingConsent`. La refuz nu se incarca Pixel, nu se citesc cookie-urile Meta si serverul nu trimite nimic catre Conversions API.
+Pixelul porneste la incarcarea fiecarei pagini publice, fara banner si fara acord prealabil - vezi sectiunea 18.3. Evenimentul `Lead` ramane legat strict de o inscriere salvata, iar evenimentul server-side se trimite pentru fiecare inscriere reusita, cat timp tokenul este configurat.
 
 ### 19.5. Erori
 

@@ -1,12 +1,9 @@
 import { getSiteContent } from '../data';
 import { getHomeHref, getLegalHref, type LegalDocumentRoute } from '../routes';
-import CookieConsent, { CookieSettingsLink } from './CookieConsent';
-import { resolveMetaPixelId } from './metaPixel';
 import { LegalLastUpdated, LegalSections, LEGAL_TITLES } from './legalContent';
 
 export default function LegalPage({ document }: { document: LegalDocumentRoute }) {
   const brandName = getSiteContent().footer.brandName || 'IV Concept';
-  const trackingEnabled = Boolean(getSiteContent().legal.googleAnalyticsId || resolveMetaPixelId(getSiteContent().legal.metaPixelId));
   const hostname = typeof window === 'undefined' ? '' : window.location.hostname;
   const homeHref = getHomeHref(hostname);
   const otherDocument = document === 'privacy' ? 'terms' : 'privacy';
@@ -34,14 +31,6 @@ export default function LegalPage({ document }: { document: LegalDocumentRoute }
             <LegalSections document={document} />
           </div>
 
-          {document === 'privacy' && trackingEnabled && (
-            <div className="mt-10">
-              <CookieSettingsLink
-                label="Schimbă preferințele pentru cookie-uri"
-                className="block border-b border-[#2c2218]/40 pb-1 text-[11px] font-semibold uppercase tracking-[0.18em]"
-              />
-            </div>
-          )}
 
           <a
             href={getLegalHref(hostname, otherDocument)}
@@ -56,13 +45,11 @@ export default function LegalPage({ document }: { document: LegalDocumentRoute }
         <div className="mx-auto flex max-w-[1340px] flex-wrap items-center justify-between gap-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2c2218]/45">
           <span>{brandName}</span>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <CookieSettingsLink className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2c2218]/70" />
             <a href={homeHref} className="text-[#2c2218]/70">Vezi întregul site →</a>
           </div>
         </div>
       </footer>
 
-      <CookieConsent />
     </main>
   );
 }

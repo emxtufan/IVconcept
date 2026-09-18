@@ -22,13 +22,7 @@
     "retentionPeriod": "Păstrăm datele cât timp sunt necesare scopului pentru care le-ai transmis, apoi le ștergem. Poți cere ștergerea oricând.",
     "lastUpdated": "",
     "googleAnalyticsId": "",
-    "metaPixelId": "",
-    "showCookieBanner": true,
-    "cookieBannerText": "Folosim cookie-uri de analiză ca să înțelegem cum este folosit site-ul. Le activăm doar dacă ești de acord.",
-    "cookieAcceptText": "Accept",
-    "cookieRejectText": "Refuz",
-    "cookieNoticeText": "Folosim doar cookie-uri strict necesare pentru funcționarea site-ului. Nu te urmărim și nu folosim cookie-uri de publicitate.",
-    "cookieNoticeButtonText": "Am înțeles"
+    "metaPixelId": ""
   },
   "hero": {
     "backgroundImage": "",

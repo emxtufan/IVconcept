@@ -74,47 +74,40 @@ test('course page edits survive a save and a reload of the content', () => {
   assert.deepEqual(normalizeSiteContent(saved).coursePage, saved.coursePage);
 });
 
-test('the privacy details start empty and keep the defaults that must never be blank', () => {
+test('the privacy details start empty and keep the default retention wording', () => {
   const legacy = structuredClone(seed) as unknown as SiteContent;
   delete (legacy as Partial<SiteContent>).legal;
 
   const normalized = normalizeSiteContent(legacy);
 
   assert.deepEqual(normalized.legal, DEFAULT_LEGAL);
-  assert.equal(normalized.legal.googleAnalyticsId, '', 'No analytics means no cookie banner');
   assert.equal(normalized.legal.legalEntityName, '');
+  assert.equal(normalized.legal.metaPixelId, '', 'No pixel id means no tracking at all');
+  assert.ok(normalized.legal.retentionPeriod.length > 0);
 });
 
-test('an administrator fills in the operator details and the analytics id', () => {
+test('an administrator fills in the operator details and the tracking ids', () => {
   const content = structuredClone(seed) as unknown as SiteContent;
   content.legal.legalEntityName = '  IV Concept SRL  ';
   content.legal.registrationNumber = 'CUI 12345678';
-  content.legal.googleAnalyticsId = ' G-ABC123 ';
-  content.legal.cookieAcceptText = '   ';
+  content.legal.metaPixelId = ' 1010134275417624 ';
+  content.legal.retentionPeriod = '   ';
 
   const saved = normalizeSiteContent(content);
 
   assert.equal(saved.legal.legalEntityName, 'IV Concept SRL');
   assert.equal(saved.legal.registrationNumber, 'CUI 12345678');
-  assert.equal(saved.legal.googleAnalyticsId, 'G-ABC123');
-  // A blank button label would leave the visitor without a way to answer.
-  assert.equal(saved.legal.cookieAcceptText, DEFAULT_LEGAL.cookieAcceptText);
+  assert.equal(saved.legal.metaPixelId, '1010134275417624');
+  // The privacy page must never show an empty retention period.
+  assert.equal(saved.legal.retentionPeriod, DEFAULT_LEGAL.retentionPeriod);
   assert.deepEqual(normalizeSiteContent(saved).legal, saved.legal);
 });
 
-test('the cookie banner can be switched off only while there is nothing to consent to', () => {
-  const content = structuredClone(seed) as unknown as SiteContent;
-  assert.equal(normalizeSiteContent(content).legal.showCookieBanner, true, 'The notice is on by default');
+test('the legal settings keep only the operator details and the tracking ids', () => {
+  const { legal } = normalizeSiteContent(structuredClone(seed) as unknown as SiteContent);
 
-  content.legal.showCookieBanner = false;
-  assert.equal(normalizeSiteContent(content).legal.showCookieBanner, false);
-
-  // The switch survives a reload, and analytics stays a separate decision.
-  const saved = normalizeSiteContent(content);
-  assert.equal(saved.legal.googleAnalyticsId, '');
-  assert.deepEqual(normalizeSiteContent(saved).legal, saved.legal);
-
-  // A missing value falls back to showing the notice rather than hiding it.
-  delete (content.legal as Partial<typeof content.legal>).showCookieBanner;
-  assert.equal(normalizeSiteContent(content).legal.showCookieBanner, true);
+  assert.deepEqual(Object.keys(legal).sort(), [
+    'address', 'contactEmail', 'googleAnalyticsId', 'lastUpdated',
+    'legalEntityName', 'metaPixelId', 'registrationNumber', 'retentionPeriod',
+  ]);
 });

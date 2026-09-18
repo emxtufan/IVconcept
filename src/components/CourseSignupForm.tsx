@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import { getLegalHref } from '../routes';
-import { hasTrackingConsent } from './cookieConsentStorage';
 import { getMetaBrowserCookies, trackMetaLead } from './metaPixel';
 
 /** Where the signup came from; stored on the subscriber row and shown in the admin list. */
@@ -46,10 +45,8 @@ export default function CourseSignupForm({
     requestRef.current = controller;
     setStatus('sending');
     setMessage('');
-    // Marketing measurement only runs on the visitor's accepted consent; the
-    // Meta cookies are forwarded as they are, and never invented when missing.
-    const trackingConsent = hasTrackingConsent();
-    const { fbp, fbc } = trackingConsent ? getMetaBrowserCookies() : { fbp: undefined, fbc: undefined };
+    // The Meta cookies are forwarded as they are, and never invented when missing.
+    const { fbp, fbc } = getMetaBrowserCookies();
     try {
       const response = await fetch('/api/course-subscribers', {
         method: 'POST',
@@ -57,15 +54,15 @@ export default function CourseSignupForm({
         signal: controller.signal,
         body: JSON.stringify({
           firstName: name.trim(), email: email.trim(), phone: phone.trim(), gdprAccepted, source,
-          trackingConsent,
-          ...(trackingConsent ? { eventSourceUrl: window.location.href, ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) } : {}),
+          eventSourceUrl: window.location.href,
+          ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}),
         }),
       });
       const payload = await response.json().catch(() => ({})) as { message?: string; eventId?: string };
       if (!response.ok) throw new Error(payload.message || 'Nu am putut înregistra cererea. Te rugăm să încerci din nou.');
       // A saved signup is the only thing that counts as a Lead. The backend sent
       // the same event id to the Conversions API, so Meta deduplicates the pair.
-      if (trackingConsent && payload.eventId) trackMetaLead(payload.eventId);
+      if (payload.eventId) trackMetaLead(payload.eventId);
       setStatus('success');
       setMessage(successMessage);
       setName('');
